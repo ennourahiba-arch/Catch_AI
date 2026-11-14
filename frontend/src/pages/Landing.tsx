@@ -82,12 +82,12 @@ export default function Landing() {
           <Link to="/student" className="mt-4 inline-block font-bold text-violet-ink underline decoration-2 underline-offset-4">Start training</Link>
         </div>
         <div>
-          <h2 className="text-2xl font-bold">Class Mode <span className="ml-1 align-middle text-sm font-bold text-navy-mute">in development</span></h2>
+          <h2 className="text-2xl font-bold">Class Mode</h2>
           <p className="mt-2 text-navy-soft">
             A three-minute team challenge in the middle of a lecture. Teams join by QR code on one phone each, and the professor
-            sees which misconceptions the room fell for. Professors can already preview the verified rounds.
+            sees which misconceptions the room fell for.
           </p>
-          <Link to="/professor" className="mt-4 inline-block font-bold text-violet-ink underline decoration-2 underline-offset-4">Preview rounds</Link>
+          <Link to="/professor" className="mt-4 inline-block font-bold text-violet-ink underline decoration-2 underline-offset-4">Set up a class challenge</Link>
         </div>
       </section>
 

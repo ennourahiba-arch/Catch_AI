@@ -6,6 +6,9 @@ import Practice from "./pages/Practice";
 import Play from "./pages/Play";
 import ProfessorDashboard from "./pages/ProfessorDashboard";
 import NotFound from "./pages/NotFound";
+import Join from "./pages/Join";
+import TeamGame from "./pages/TeamGame";
+import HostRoom from "./pages/HostRoom";
 
 export default function App() {
   return (
@@ -16,6 +19,10 @@ export default function App() {
         <Route path="practice/:topic" element={<Practice />} />
         <Route path="play/:roundId" element={<Play />} />
         <Route path="professor" element={<ProfessorDashboard />} />
+        <Route path="join" element={<Join />} />
+        <Route path="join/:code" element={<Join />} />
+        <Route path="class/:code" element={<TeamGame />} />
+        <Route path="host/:code" element={<HostRoom />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { BadgeCheck, Play, QrCode } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { BadgeCheck, Loader2, Play, QrCode } from "lucide-react";
+import { api, tokens } from "../lib/api";
 import AttemptSheet from "../components/AttemptSheet";
 import Math from "../components/Math";
 import { ErrorState, Loading } from "../components/States";
@@ -11,6 +12,10 @@ export default function ProfessorDashboard() {
   const { pack, error, retry } = usePack();
   const [topic, setTopic] = useState<TopicId>("closed-interval");
   const [roundId, setRoundId] = useState<string>("int-demo-endpoints");
+  const [minutes, setMinutes] = useState(3);
+  const [creating, setCreating] = useState(false);
+  const [createErr, setCreateErr] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   if (error) return <ErrorState message={error} onRetry={retry} />;
   if (!pack) return <Loading />;
@@ -86,11 +91,34 @@ export default function ProfessorDashboard() {
 
           <div className="flex flex-wrap items-start gap-3">
             <Link to={`/play/${round.id}`} className="btn-violet"><Play size={17} aria-hidden /> Try it as a student</Link>
-            <span className="inline-flex flex-col">
-              <button className="btn-primary" disabled aria-describedby="room-note"><QrCode size={17} aria-hidden /> Create class session</button>
-              <span id="room-note" className="mt-1 text-xs text-navy-mute">Needs the live classroom server, coming in the next build</span>
-            </span>
+            <label className="inline-flex min-h-[48px] items-center gap-2 rounded-full border border-line bg-white px-4">
+              <span className="text-[15px] text-navy-mute">Time</span>
+              <select value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} className="bg-transparent font-bold outline-none">
+                <option value={2}>2 min</option>
+                <option value={3}>3 min</option>
+                <option value={5}>5 min</option>
+              </select>
+            </label>
+            <button
+              className="btn-primary"
+              disabled={creating}
+              onClick={async () => {
+                setCreating(true);
+                setCreateErr(null);
+                try {
+                  const r = await api.createRoom(round.id, minutes * 60);
+                  tokens.set("host", r.code, { token: r.host_token });
+                  navigate(`/host/${r.code}`);
+                } catch (e) {
+                  setCreateErr((e as Error).message);
+                  setCreating(false);
+                }
+              }}
+            >
+              {creating ? <Loader2 size={17} className="animate-spin" aria-hidden /> : <QrCode size={17} aria-hidden />} Create class session
+            </button>
           </div>
+          {createErr && <p className="rounded-lg bg-coral-wash px-4 py-3 text-coral-ink" role="alert">{createErr}</p>}
         </div>
       </div>
     </div>

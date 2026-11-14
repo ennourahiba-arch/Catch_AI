@@ -69,3 +69,8 @@ def test_build_is_deterministic(result):
 def test_web_copy_matches(result):
     web = Path(__file__).resolve().parents[2] / "frontend" / "public" / "packs" / "calculus1.json"
     assert json.loads(web.read_text())["content_hash"] == result["pack"]["content_hash"]
+
+
+def test_backend_copy_matches(result):
+    api = Path(__file__).resolve().parents[2] / "backend" / "packs" / "calculus1.json"
+    assert json.loads(api.read_text())["content_hash"] == result["pack"]["content_hash"]

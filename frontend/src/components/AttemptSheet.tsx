@@ -1,11 +1,10 @@
 import { Bot } from "lucide-react";
 import Math from "./Math";
 import Ring from "./Ring";
-import type { Round } from "../lib/types";
 import type { CatchChoice } from "../lib/round";
 
 interface Props {
-  round: Round;
+  round: { steps: { n: number; text: string; latex: string }[] };
   /** "select": student is choosing. "review": answer revealed. "static": preview only. */
   mode: "select" | "review" | "static";
   selected?: CatchChoice | null;

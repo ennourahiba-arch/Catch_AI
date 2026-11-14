@@ -7,6 +7,7 @@ Writes:
     content/packs/calculus1-v<version>.json      the verified pack
     content/packs/review_queue.json             drafts that failed verification
     frontend/public/packs/calculus1.json        copy served to the web app
+    backend/packs/calculus1.json                copy used by the classroom server
 """
 from __future__ import annotations
 
@@ -26,6 +27,7 @@ PACK_VERSION = "1.0.0"
 ROOT = Path(__file__).resolve().parents[2]
 OUT_DIR = ROOT / "content" / "packs"
 WEB_DIR = ROOT / "frontend" / "public" / "packs"
+API_DIR = ROOT / "backend" / "packs"
 
 
 class Rejected(Exception):
@@ -156,10 +158,12 @@ def build() -> dict[str, Any]:
     }
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     WEB_DIR.mkdir(parents=True, exist_ok=True)
+    API_DIR.mkdir(parents=True, exist_ok=True)
     out = OUT_DIR / f"calculus1-v{PACK_VERSION}.json"
     out.write_text(json.dumps(pack, indent=2, ensure_ascii=False))
     (OUT_DIR / "review_queue.json").write_text(json.dumps(review, indent=2, ensure_ascii=False))
     shutil.copy(out, WEB_DIR / "calculus1.json")
+    shutil.copy(out, API_DIR / "calculus1.json")
     return {"pack": pack, "review": review, "path": out}
 
 

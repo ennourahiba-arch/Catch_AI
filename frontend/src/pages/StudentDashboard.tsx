@@ -63,10 +63,7 @@ export default function StudentDashboard() {
           </div>
           <div className="flex flex-wrap gap-3">
             <Link to={`/practice/${lastTopic}`} className="btn-primary"><Play size={17} aria-hidden /> {attempts.length ? "Continue training" : "Start training"}</Link>
-            <span className="inline-flex flex-col">
-              <button className="btn-ghost" disabled aria-describedby="join-note"><Users size={17} aria-hidden /> Join class game</button>
-              <span id="join-note" className="mt-1 text-center text-xs text-navy-mute">Live class games come in the next build</span>
-            </span>
+            <Link to="/join" className="btn-ghost"><Users size={17} aria-hidden /> Join class game</Link>
           </div>
         </div>
       )}

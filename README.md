@@ -6,7 +6,7 @@ The AI acts as a confident student who makes realistic mistakes. The student bec
 **Catch** the first wrong step, **Fix** it, **Explain** why it happened. Every round is verified with
 SymPy before it is published, so the mathematics never depends on trusting an LLM.
 
-This repository is at **Phase 1 (functional foundation)** of the build plan.
+This repository is at **Phase 2 (live classroom)** of the build plan.
 
 ## What works now, and what doesn't yet
 
@@ -20,7 +20,10 @@ This repository is at **Phase 1 (functional foundation)** of the build plan.
 | Professor round preview with answer key and verification details | Working |
 | Mandatory demo round (x³ − 6x² + 11x − 6 on [0, 4], forgotten endpoints) | Working |
 | "Correct answer from wrong reasoning" round (solved f(x) = 0) | Working |
-| Live classroom (rooms, QR join, timer, live results) | **Phase 2, not built.** Buttons are visibly disabled and say so. |
+| Live classroom: room codes, QR join, team lobby, server-authoritative timer | Working (needs the backend on Render) |
+| Live updates over WebSockets, automatic polling fallback, reconnection | Working |
+| Professor results: % caught / fixed / explained, step and reason charts, scores, data-driven insights | Working |
+| Privacy: breakdowns hidden below 3 answering teams; clearly labelled sample data option | Working |
 | Confidence check, hints, Your Turn exercise, readiness, offline PWA | **Phase 3, not built.** |
 | Qwen generation, Examiner agent, answer-leak guard | **Phase 4, not built.** |
 
@@ -37,12 +40,17 @@ catch-the-ai/
 │   ├── catchai/build_pack.py Verifies drafts, exports the versioned pack
 │   ├── packs/                Built pack + review queue for rejected drafts
 │   └── tests/                pytest: verifier cases + pack integrity
+├── backend/                  FastAPI classroom server (deploy to Render)
+│   ├── app/main.py           Routes, WebSocket hub, server-side timer
+│   ├── app/logic.py          Judging, scoring, class aggregates, insights
+│   ├── app/db.py             SQLite for temporary rooms (auto-expire)
+│   ├── packs/calculus1.json  Server copy of the pack (holds the answer keys)
+│   └── tests/                pytest: classroom flow, privacy, anti-cheat
 └── frontend/                 React + TypeScript + Vite + Tailwind
     ├── public/packs/calculus1.json   Copy of the pack served to the app
     └── src/lib/round.ts      Pure scoring/state machine (+ vitest tests)
 ```
 
-`backend/` (FastAPI classroom server) will be added in Phase 2.
 
 ## How verification works
 
@@ -94,7 +102,20 @@ python -m catchai.build_pack     # re-verifies every round and rewrites both pac
 pytest                           # 19 tests
 ```
 
-Always rebuild the pack and commit both `content/packs/` and `frontend/public/packs/` after editing templates.
+Always rebuild the pack and commit `content/packs/`, `frontend/public/packs/` and `backend/packs/` after editing templates.
+
+To run the classroom server locally (in a second terminal):
+
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r requirements-dev.txt
+uvicorn app.main:app --reload --port 8000
+pytest                           # 12 tests
+```
+
+With no `VITE_API_URL` set, the frontend talks to `http://localhost:8000`. To try several teams on one computer, open extra browser windows in private/incognito mode: each one counts as a separate team.
 
 ## Step-by-step: GitHub
 
@@ -119,20 +140,50 @@ git push -u origin main
 
 Every push to `main` redeploys automatically.
 
-### Important for Phase 2: the classroom server can't live on Vercel as-is
+## Step-by-step: deploy the classroom server on Render
 
-The live classroom needs a long-running server (WebSockets, server-authoritative timers, room state).
-Vercel's Python functions are short-lived, have no WebSocket support, and their filesystem is wiped, so
-SQLite would lose every room. Two workable options:
+The live classroom needs a server that stays running (WebSockets, timers, room state), which Vercel
+can't host. The website stays on Vercel; only `backend/` goes to Render.
 
-- **Recommended:** keep the frontend on Vercel and host the FastAPI backend on Render, Railway or Fly.io
-  (all have free or cheap tiers and support WebSockets). The frontend reads `VITE_API_URL`.
-- **All-Vercel:** use polling instead of WebSockets and store rooms in a hosted store such as Upstash
-  Redis. Doable, but more moving parts.
+1. Go to render.com and sign up with GitHub.
+2. Click **New → Web Service** and pick your repo.
+3. Fill in:
+   - **Name:** `catch-ai-api` (this becomes `https://catch-ai-api.onrender.com`; if taken, Render adds letters)
+   - **Root Directory:** `backend`
+   - **Runtime / Language:** Python 3
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT --no-access-log`
+   - **Instance Type:** Free
+4. Under **Environment Variables**, add `ALLOWED_ORIGINS` = your Vercel address, e.g.
+   `https://catch-ai.vercel.app` (no trailing slash).
+5. Click **Create Web Service** and wait for "Live". Check `https://<your-render-url>/api/health`:
+   it should show `{"ok":true,...}`.
 
-Decide before Phase 2 starts.
+Then connect the website to it:
 
-## Demo walkthrough (Phase 1)
+6. In Vercel: your project → **Settings → Environment Variables** → add `VITE_API_URL` =
+   your Render URL (e.g. `https://catch-ai-api.onrender.com`, no trailing slash).
+7. **Deployments** → the latest one → **⋯ → Redeploy**. This is required: the address is built into
+   the site at build time, so saving the variable alone changes nothing.
+
+### Render free tier: what to know before a demo
+
+- It **sleeps after 15 minutes without traffic**. The first request after that takes about a minute.
+  Open `/api/health` a few minutes before presenting.
+- Rooms live in SQLite on the server's temporary disk, so **a sleep or restart deletes open rooms**.
+  Create the room right before you use it. (Rooms are temporary by design and auto-delete after 3 hours.)
+- A paid instance (about $7/month) never sleeps, if you want zero risk on demo day.
+
+## Testing the classroom across devices
+
+1. On a laptop: Professor → pick a round → **Create class session**. Project this screen.
+2. On 3 phones (or 3 private browser windows): scan the QR code or go to `/join` and enter the code.
+3. Watch the team count rise live, then press **Start**. Answer on the phones.
+4. Press **End now and reveal**, or wait for the timer. Phones show the solution; the laptop shows results.
+
+With fewer than 3 teams, the breakdown stays hidden; use **Show sample data instead** (it is labelled as invented).
+
+## Demo walkthrough
 
 1. Landing page: the hero shows the AI's flawed solution with step 4 ringed.
 2. "Try a sample round now": the endpoint demo. Pick step 4, choose "absolute maximum = 6 at x = 4",
@@ -143,8 +194,15 @@ Decide before Phase 2 starts.
 
 ## Known limitations
 
-- The seed pack ships answer keys to the browser, which is fine for solo practice but not for a graded
-  class game. In Phase 2 the server will hold keys and only reveal them after the round ends.
+- Solo practice (Home Mode) loads the pack with answer keys into the browser, which is fine for
+  self-study. Class games never send keys to teams: the server reveals the first error to a team only
+  after it locks its catch, and the full solution only at the reveal.
+- In class, a team that locks a wrong catch sees where the real error is (so it can finish for practice,
+  without points). A team could tell its neighbours, as with any classroom quiz.
+- The Render free tier sleeps and loses open rooms on restart (see above).
+- `npm audit` reports advisories in dev-only tools (Vite, Vitest) and two moderate React Router issues that
+  apply to server-side rendering and user-typed redirect paths. Neither applies here (room codes are
+  stripped to letters and digits before navigation). Upgrading to Vite 7 / React Router 7 is a later task.
 - Content is template-authored. LLM-drafted rounds (Qwen) arrive in Phase 4, through the same verifier.
 - The verifier covers the claim types listed above for single-variable functions in `x`.
 - Fonts load from Google Fonts; without a connection, the app falls back to system fonts.
