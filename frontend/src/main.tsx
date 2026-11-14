@@ -14,3 +14,10 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     </MotionConfig>
   </React.StrictMode>,
 );
+
+// Offline support (production only): see the service worker plugin in vite.config.ts.
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+  });
+}

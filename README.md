@@ -6,7 +6,7 @@ The AI acts as a confident student who makes realistic mistakes. The student bec
 **Catch** the first wrong step, **Fix** it, **Explain** why it happened. Every round is verified with
 SymPy before it is published, so the mathematics never depends on trusting an LLM.
 
-This repository is at **Phase 2 (live classroom)** of the build plan.
+This repository is at **Phase 3 (Home Mode)** of the build plan.
 
 ## What works now, and what doesn't yet
 
@@ -24,7 +24,10 @@ This repository is at **Phase 2 (live classroom)** of the build plan.
 | Live updates over WebSockets, automatic polling fallback, reconnection | Working |
 | Professor results: % caught / fixed / explained, step and reason charts, scores, data-driven insights | Working |
 | Privacy: breakdowns hidden below 3 answering teams; clearly labelled sample data option | Working |
-| Confidence check, hints, Your Turn exercise, readiness, offline PWA | **Phase 3, not built.** |
+| Home Mode: confidence check (1–5), Catch the AI with 3 attempts and a 3-level hint ladder | Working |
+| Your Turn: 17 SymPy-verified exercises; students type answers, graded exactly offline | Working |
+| Readiness per topic (80% independent exercises, 20% first-try catches), confidence vs. results | Working |
+| Offline: installable PWA, service worker precaches the app and pack; Home Mode works with no internet | Working |
 | Qwen generation, Examiner agent, answer-leak guard | **Phase 4, not built.** |
 
 Nothing in the app is simulated. All round content comes from hand-authored mistake templates (labelled
@@ -39,7 +42,8 @@ catch-the-ai/
 │   ├── catchai/templates.py  Hand-authored misconception templates
 │   ├── catchai/build_pack.py Verifies drafts, exports the versioned pack
 │   ├── packs/                Built pack + review queue for rejected drafts
-│   └── tests/                pytest: verifier cases + pack integrity
+│   ├── catchai/exercises.py  Your Turn exercises + checker test vectors
+│   └── tests/                pytest: verifier, pack integrity, exercises
 ├── backend/                  FastAPI classroom server (deploy to Render)
 │   ├── app/main.py           Routes, WebSocket hub, server-side timer
 │   ├── app/logic.py          Judging, scoring, class aggregates, insights
@@ -48,7 +52,10 @@ catch-the-ai/
 │   └── tests/                pytest: classroom flow, privacy, anti-cheat
 └── frontend/                 React + TypeScript + Vite + Tailwind
     ├── public/packs/calculus1.json   Copy of the pack served to the app
-    └── src/lib/round.ts      Pure scoring/state machine (+ vitest tests)
+    ├── src/lib/round.ts      Pure scoring/state machine (+ vitest tests)
+    ├── src/lib/mathcheck.ts  Exact offline answer checker (cross-tested against SymPy)
+    ├── src/lib/readiness.ts  Readiness model
+    └── vite.config.ts        Also generates the offline service worker (dist/sw.js)
 ```
 
 
@@ -66,6 +73,16 @@ Every step in a round carries a structured claim, for example
 - Supported claim types: equivalent expressions, derivatives, compositions, critical points (on R or an
   interval), evaluations, local extrema (second-derivative test), absolute extrema on closed intervals.
   Anything else is `unverifiable`, never graded.
+
+### How typed answers are graded (Your Turn)
+
+`frontend/src/lib/mathcheck.ts` parses what the student types and compares it with the answer using exact
+fractions (BigInt), never decimals. For derivatives it proves equality of polynomials and powers of x
+(e.g. `8(2x+3)^3` equals `64x^3 + 288x^2 + 432x + 216`). For numbers, `0.333` is not accepted for `1/3`.
+Anything it can't prove (sin, sqrt, dividing by `x+1`) gets "can't verify that form" and does not count
+as an attempt. Every exercise is chosen in Python so its answer is inside that provable class, and
+`content/packs/checker_vectors.json` (generated with SymPy) is replayed by the frontend tests, so the two
+checkers are shown to agree.
 
 Scoring: catch 2, fix 1, explain 1 (4 total). Fix and explain only earn points if the catch was correct,
 because a wrong catch reveals the true error step. A correct "No mistake" on a correct round scores 4.
@@ -99,7 +116,7 @@ python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 python -m catchai.build_pack     # re-verifies every round and rewrites both pack copies
-pytest                           # 19 tests
+pytest                           # 25 tests
 ```
 
 Always rebuild the pack and commit `content/packs/`, `frontend/public/packs/` and `backend/packs/` after editing templates.
@@ -174,6 +191,14 @@ Then connect the website to it:
   Create the room right before you use it. (Rooms are temporary by design and auto-delete after 3 hours.)
 - A paid instance (about $7/month) never sleeps, if you want zero risk on demo day.
 
+## Testing Home Mode offline (acceptance Test G)
+
+1. On your phone, open the Vercel site and go to **Student** once while online. The **Offline** card on the
+   dashboard says "Saved on this device" when it's ready. Optionally use **Add to Home Screen**.
+2. Turn on airplane mode.
+3. Open the site again (or the home-screen icon), pick a topic and complete a full training session.
+   Class games correctly say they can't reach the server.
+
 ## Testing the classroom across devices
 
 1. On a laptop: Professor → pick a round → **Create class session**. Project this screen.
@@ -200,6 +225,10 @@ With fewer than 3 teams, the breakdown stays hidden; use **Show sample data inst
 - In class, a team that locks a wrong catch sees where the real error is (so it can finish for practice,
   without points). A team could tell its neighbours, as with any classroom quiz.
 - The Render free tier sleeps and loses open rooms on restart (see above).
+- Typed-answer checking covers polynomials, powers of x and exact numbers. Exercises needing sin, e^x or
+  square roots in the answer aren't offered as Your Turn yet (they appear in AI rounds, which use options).
+- Readiness uses the last 5 rounds and exercises per topic and needs at least 2 exercises before showing
+  a score. It describes practice on this device only, not overall ability.
 - `npm audit` reports advisories in dev-only tools (Vite, Vitest) and two moderate React Router issues that
   apply to server-side rendering and user-typed redirect paths. Neither applies here (room codes are
   stripped to letters and digits before navigation). Upgrading to Vite 7 / React Router 7 is a later task.

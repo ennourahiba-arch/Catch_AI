@@ -14,9 +14,11 @@ interface Props {
   /** In review mode, the step the student picked (if any). */
   picked?: CatchChoice | null;
   compact?: boolean;
+  /** Home Mode: steps already tried and found valid. */
+  ruledOut?: CatchChoice[];
 }
 
-export default function AttemptSheet({ round, mode, selected, onSelect, firstError, picked, compact }: Props) {
+export default function AttemptSheet({ round, mode, selected, onSelect, firstError, picked, compact, ruledOut = [] }: Props) {
   return (
     <section className="sheet overflow-hidden" aria-label="The AI's submitted solution">
       <div className="flex items-center gap-2 border-b border-line bg-violet-wash/60 py-2.5 pl-[4.25rem] pr-4 text-[15px]">
@@ -29,6 +31,7 @@ export default function AttemptSheet({ round, mode, selected, onSelect, firstErr
           const isSel = mode === "select" && selected === s.n;
           const isErr = mode !== "select" && firstError === s.n;
           const isWrongPick = mode === "review" && picked === s.n && firstError !== s.n;
+          const isRuledOut = mode === "select" && ruledOut.includes(s.n);
           const Inner = (
             <>
               <span className="relative flex w-[3.25rem] shrink-0 justify-center pt-0.5">
@@ -40,6 +43,7 @@ export default function AttemptSheet({ round, mode, selected, onSelect, firstErr
                 <Math tex={s.latex} className="mt-1 max-w-full text-navy" />
                 {isErr && <span className="mt-1 block font-display text-[15px] font-bold text-coral-ink">First error</span>}
                 {isWrongPick && <span className="mt-1 block text-[15px] text-navy-mute">Your pick. This step is valid.</span>}
+                {isRuledOut && <span className="mt-1 block text-[15px] font-bold text-teal-ink">You checked this one: it's valid.</span>}
               </span>
             </>
           );
@@ -52,7 +56,8 @@ export default function AttemptSheet({ round, mode, selected, onSelect, firstErr
                   role="radio"
                   aria-checked={isSel}
                   onClick={() => onSelect?.(s.n)}
-                  className={`${base} transition-colors hover:bg-coral-wash/40 ${isSel ? "bg-coral-wash/60" : ""}`}
+                  disabled={isRuledOut}
+                  className={`${base} transition-colors ${isRuledOut ? "cursor-default opacity-60" : "hover:bg-coral-wash/40"} ${isSel ? "bg-coral-wash/60" : ""}`}
                 >
                   <span className="sr-only">Step {s.n}: </span>
                   {Inner}

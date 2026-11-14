@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { initialState, maxPoints, score, submitCatch, submitFix, submitWhy } from "./round";
+import { hintsAvailable, initialState, maxPoints, score, scoreHome, submitCatch, submitCatchHome, submitFix, submitWhy } from "./round";
 import type { Pack, Round } from "./types";
 
 const pack: Pack = JSON.parse(readFileSync(resolve(__dirname, "../../public/packs/calculus1.json"), "utf8"));
@@ -68,5 +68,32 @@ describe("Pack shape", () => {
       expect(r.fix_options.filter((o) => o.id === r.correct_fix)).toHaveLength(1);
       expect(r.why_options.filter((w) => w.id === r.correct_why)).toHaveLength(1);
     }
+  });
+});
+
+describe("Home Mode catch with retries and hints", () => {
+  it("rules out a wrong pick, unlocks a hint, then accepts the right step for half catch points", () => {
+    let s = submitCatchHome(demo, initialState, 3);
+    expect(s.phase).toBe("catch");
+    expect(s.wrongPicks).toEqual([3]);
+    expect(hintsAvailable(s)).toBe(2);
+    expect(submitCatchHome(demo, s, 3)).toBe(s); // same wrong pick is not a new attempt
+    s = submitCatchHome(demo, s, 4);
+    expect(s.catchCorrect).toBe(true);
+    s = submitWhy(demo, submitFix(demo, s, demo.correct_fix!), demo.correct_why!);
+    expect(scoreHome(demo, s, pack.scoring)).toBe(pack.scoring.catch / 2 + 2);
+  });
+  it("after 3 wrong attempts the round moves on with no points", () => {
+    let s = initialState;
+    for (const c of [1, 2, 3] as const) s = submitCatchHome(demo, s, c);
+    expect(s.phase).toBe("fix");
+    expect(s.catchCorrect).toBe(false);
+    s = submitWhy(demo, submitFix(demo, s, demo.correct_fix!), demo.correct_why!);
+    expect(scoreHome(demo, s, pack.scoring)).toBe(0);
+  });
+  it("first-try catch scores like class mode", () => {
+    let s = submitCatchHome(demo, initialState, 4);
+    s = submitWhy(demo, submitFix(demo, s, demo.correct_fix!), demo.correct_why!);
+    expect(scoreHome(demo, s, pack.scoring)).toBe(4);
   });
 });

@@ -1,4 +1,5 @@
-// Local-only learning history in IndexedDB. Nothing here is sent to a server.
+// Local-only learning history in IndexedDB. Nothing here is sent to a server,
+// and professors never see it.
 import type { TopicId } from "./types";
 
 export interface Attempt {
@@ -12,11 +13,33 @@ export interface Attempt {
   points: number;
   maxPoints: number;
   mistakeLabel: string | null;
+  mode?: "quick" | "home";
+  catchAttempts?: number;
+  hintsUsed?: number;
 }
 
+export interface ExerciseAttempt {
+  id?: number;
+  exerciseId: string;
+  topic: TopicId;
+  ts: number;
+  attempts: number;
+  correct: boolean;     // solved within the allowed attempts
+  firstTry: boolean;    // solved on the first attempt
+  usedHint: boolean;
+}
+
+export interface Confidence {
+  id?: number;
+  topic: TopicId;
+  ts: number;
+  rating: 1 | 2 | 3 | 4 | 5;
+}
+
+type Store = "attempts" | "exercises" | "confidence";
 const DB = "catch-the-ai";
-const VERSION = 1;
-let memory: { attempts: Attempt[]; kv: Record<string, unknown> } | null = null;
+const VERSION = 2;
+const memory: Record<Store, unknown[]> & { kv: Record<string, unknown> } = { attempts: [], exercises: [], confidence: [], kv: {} };
 
 function open(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -24,7 +47,9 @@ function open(): Promise<IDBDatabase> {
     const req = indexedDB.open(DB, VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
-      if (!db.objectStoreNames.contains("attempts")) db.createObjectStore("attempts", { keyPath: "id", autoIncrement: true });
+      for (const s of ["attempts", "exercises", "confidence"]) {
+        if (!db.objectStoreNames.contains(s)) db.createObjectStore(s, { keyPath: "id", autoIncrement: true });
+      }
       if (!db.objectStoreNames.contains("kv")) db.createObjectStore("kv");
     };
     req.onsuccess = () => resolve(req.result);
@@ -41,33 +66,36 @@ async function tx<T>(store: string, mode: IDBTransactionMode, fn: (s: IDBObjectS
   });
 }
 
-// Falls back to in-memory storage (e.g. private browsing without IndexedDB).
-function mem() {
-  if (!memory) memory = { attempts: [], kv: {} };
-  return memory;
-}
-
-export async function addAttempt(a: Attempt): Promise<void> {
+async function addTo<T extends { id?: number }>(store: Store, rec: T): Promise<void> {
   try {
-    await tx("attempts", "readwrite", (s) => s.add(a));
+    await tx(store, "readwrite", (s) => s.add(rec));
   } catch {
-    mem().attempts.push({ ...a, id: mem().attempts.length + 1 });
+    memory[store].push({ ...rec, id: memory[store].length + 1 });
   }
 }
 
-export async function listAttempts(): Promise<Attempt[]> {
+async function listFrom<T extends { ts: number }>(store: Store): Promise<T[]> {
+  let rows: T[];
   try {
-    return (await tx<Attempt[]>("attempts", "readonly", (s) => s.getAll())).sort((a, b) => b.ts - a.ts);
+    rows = await tx<T[]>(store, "readonly", (s) => s.getAll());
   } catch {
-    return [...mem().attempts].sort((a, b) => b.ts - a.ts);
+    rows = [...(memory[store] as T[])];
   }
+  return rows.sort((a, b) => b.ts - a.ts);
 }
+
+export const addAttempt = (a: Attempt) => addTo("attempts", a);
+export const listAttempts = () => listFrom<Attempt>("attempts");
+export const addExerciseAttempt = (a: ExerciseAttempt) => addTo("exercises", a);
+export const listExerciseAttempts = () => listFrom<ExerciseAttempt>("exercises");
+export const addConfidence = (c: Confidence) => addTo("confidence", c);
+export const listConfidence = () => listFrom<Confidence>("confidence");
 
 export async function getKV<T>(key: string): Promise<T | undefined> {
   try {
     return (await tx<T>("kv", "readonly", (s) => s.get(key))) ?? undefined;
   } catch {
-    return mem().kv[key] as T | undefined;
+    return memory.kv[key] as T | undefined;
   }
 }
 
@@ -75,15 +103,20 @@ export async function setKV(key: string, value: unknown): Promise<void> {
   try {
     await tx("kv", "readwrite", (s) => s.put(value, key));
   } catch {
-    mem().kv[key] = value;
+    memory.kv[key] = value;
   }
 }
 
 export async function clearAll(): Promise<void> {
   try {
-    await tx("attempts", "readwrite", (s) => s.clear());
-    await tx("kv", "readwrite", (s) => s.clear());
+    for (const s of ["attempts", "exercises", "confidence", "kv"]) await tx(s, "readwrite", (st) => st.clear());
   } catch {
-    memory = null;
+    memory.attempts = []; memory.exercises = []; memory.confidence = []; memory.kv = {};
   }
 }
+
+export async function loadHistory() {
+  const [attempts, exercises, confidence] = await Promise.all([listAttempts(), listExerciseAttempts(), listConfidence()]);
+  return { attempts, exercises, confidence };
+}
+export type History = Awaited<ReturnType<typeof loadHistory>>;

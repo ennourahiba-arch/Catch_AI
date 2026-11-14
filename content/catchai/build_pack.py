@@ -20,6 +20,7 @@ from typing import Any
 
 import sympy as sp
 
+from .exercises import all_exercises, check_exercise, checker_vectors, public
 from .templates import MISCONCEPTIONS, TOPICS, all_drafts
 from .verify import INVALID, VALID, check_claim, first_invalid_step
 
@@ -145,7 +146,11 @@ def build() -> dict[str, Any]:
         except Rejected as exc:
             review.append({"id": d["id"], "reason": str(exc)})
 
-    body = json.dumps(rounds, sort_keys=True, ensure_ascii=False)
+    exercises = all_exercises()
+    for e in exercises:
+        check_exercise(e)  # raises: an unverified exercise must never ship
+    vectors = checker_vectors(exercises)
+    body = json.dumps([rounds, [public(e) for e in exercises]], sort_keys=True, ensure_ascii=False)
     pack = {
         "pack_id": "calculus1",
         "subject": "Calculus 1",
@@ -155,12 +160,14 @@ def build() -> dict[str, Any]:
         "misconceptions": MISCONCEPTIONS,
         "scoring": {"catch": 2, "fix": 1, "explain": 1, "no_mistake": 4},
         "rounds": rounds,
+        "exercises": [public(e) for e in exercises],
     }
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     WEB_DIR.mkdir(parents=True, exist_ok=True)
     API_DIR.mkdir(parents=True, exist_ok=True)
     out = OUT_DIR / f"calculus1-v{PACK_VERSION}.json"
     out.write_text(json.dumps(pack, indent=2, ensure_ascii=False))
+    (OUT_DIR / "checker_vectors.json").write_text(json.dumps(vectors, indent=2, ensure_ascii=False))
     (OUT_DIR / "review_queue.json").write_text(json.dumps(review, indent=2, ensure_ascii=False))
     shutil.copy(out, WEB_DIR / "calculus1.json")
     shutil.copy(out, API_DIR / "calculus1.json")
@@ -171,7 +178,7 @@ if __name__ == "__main__":
     res = build()
     rounds = res["pack"]["rounds"]
     correct = sum(r["is_fully_correct"] for r in rounds)
-    print(f"Verified rounds: {len(rounds)} ({correct} fully correct)")
+    print(f"Verified rounds: {len(rounds)} ({correct} fully correct), exercises: {len(res['pack']['exercises'])}")
     for r in rounds:
         print(f"  {r['id']:<22} first error: {r['first_incorrect_step']}  label: {r['mistake_label']}")
     if res["review"]:

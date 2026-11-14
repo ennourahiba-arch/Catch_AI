@@ -76,8 +76,8 @@ export default function Landing() {
         <div>
           <h2 className="text-2xl font-bold">Home Mode</h2>
           <p className="mt-2 text-navy-soft">
-            Train on your own, at your pace. Your progress stays on your device. Twenty-one rounds across derivatives, the chain rule,
-            critical points and closed-interval extrema are ready now.
+            Train on your own: rate your confidence, catch the AI's mistake with hints when you need them, then solve a fresh
+            problem yourself. Your readiness is based on that last part. Progress stays on your device, and it works offline.
           </p>
           <Link to="/student" className="mt-4 inline-block font-bold text-violet-ink underline decoration-2 underline-offset-4">Start training</Link>
         </div>

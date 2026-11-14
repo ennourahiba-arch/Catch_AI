@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import Join from "./pages/Join";
 import TeamGame from "./pages/TeamGame";
 import HostRoom from "./pages/HostRoom";
+import Train from "./pages/Train";
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
         <Route index element={<Landing />} />
         <Route path="student" element={<StudentDashboard />} />
         <Route path="practice/:topic" element={<Practice />} />
+        <Route path="train/:topic" element={<Train />} />
         <Route path="play/:roundId" element={<Play />} />
         <Route path="professor" element={<ProfessorDashboard />} />
         <Route path="join" element={<Join />} />

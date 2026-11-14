@@ -44,6 +44,24 @@ export interface Round {
   pack_version: string;
 }
 
+export type ExerciseAnswer =
+  | { kind: "expression"; coeffs: Record<string, string> }
+  | { kind: "points"; values: string[] }
+  | { kind: "extremum"; extremum: "max" | "min"; value: string; at: string[] };
+
+export interface Exercise {
+  id: string;
+  topic: TopicId;
+  difficulty: number;
+  prompt: string;
+  latex: string;
+  answer: ExerciseAnswer;
+  answer_latex: string;
+  input_help: string;
+  hint: string;
+  solution: { text: string; latex: string }[];
+}
+
 export interface Pack {
   pack_id: string;
   subject: string;
@@ -53,4 +71,5 @@ export interface Pack {
   misconceptions: Record<string, string>;
   scoring: { catch: number; fix: number; explain: number; no_mistake: number };
   rounds: Round[];
+  exercises: Exercise[];
 }
