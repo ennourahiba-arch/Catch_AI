@@ -1,0 +1,38 @@
+@import "katex/dist/katex.min.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    @apply bg-paper text-navy font-body antialiased;
+    font-size: 17px;
+    line-height: 1.55;
+  }
+  h1, h2, h3 { @apply font-display text-navy; letter-spacing: -0.015em; }
+  :focus-visible { outline: 3px solid #7765F6; outline-offset: 2px; border-radius: 4px; }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 font-bold transition-colors
+           disabled:cursor-not-allowed disabled:opacity-50 min-h-[48px];
+  }
+  .btn-primary { @apply btn bg-navy text-white hover:bg-navy-soft; }
+  .btn-violet { @apply btn bg-violet-ink text-white hover:bg-violet; }
+  .btn-ghost { @apply btn border border-line bg-white text-navy hover:border-navy-mute; }
+  .sheet {
+    @apply bg-white border border-line rounded-sheet;
+    /* exam-paper margin rule */
+    background-image: linear-gradient(to right, transparent 3.25rem, #FFD3CB 3.25rem, #FFD3CB calc(3.25rem + 1px), transparent calc(3.25rem + 1px));
+  }
+  .katex-wrap { @apply overflow-x-auto overflow-y-hidden py-1; }
+  .katex-wrap .katex { font-size: 1.12em; }
+  .katex-wrap .katex-display { margin: 0.25em 0; text-align: left; }
+  .katex-wrap .katex-display > .katex { text-align: left; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}

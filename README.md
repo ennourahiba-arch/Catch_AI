@@ -6,7 +6,7 @@ The AI acts as a confident student who makes realistic mistakes. The student bec
 **Catch** the first wrong step, **Fix** it, **Explain** why it happened. Every round is verified with
 SymPy before it is published, so the mathematics never depends on trusting an LLM.
 
-This repository is at **Phase 3 (Home Mode)** of the build plan.
+This repository is at **Phase 3 + any-subject uploads** of the build plan.
 
 ## What works now, and what doesn't yet
 
@@ -28,6 +28,10 @@ This repository is at **Phase 3 (Home Mode)** of the build plan.
 | Your Turn: 17 SymPy-verified exercises; students type answers, graded exactly offline | Working |
 | Readiness per topic (80% independent exercises, 20% first-try catches), confidence vs. results | Working |
 | Offline: installable PWA, service worker precaches the app and pack; Home Mode works with no internet | Working |
+| Any subject: upload PDF/Word/PowerPoint/text + optional past exams; quiz, written or oral format | Working (needs an AI key on Render) |
+| Generated rounds: quotes matched word for word against the document, plus an independent AI review | Working |
+| Oral exam chat: AI examiner (with a server-side answer-leak guard) and AI candidate to catch | Working (needs an AI key) |
+| Class games from uploaded material, after the professor approves each round | Working |
 | Qwen generation, Examiner agent, answer-leak guard | **Phase 4, not built.** |
 
 Nothing in the app is simulated. All round content comes from hand-authored mistake templates (labelled
@@ -58,6 +62,30 @@ catch-the-ai/
     └── vite.config.ts        Also generates the offline service worker (dist/sw.js)
 ```
 
+
+## Any subject: how uploaded material is handled
+
+1. **Reading:** `POST /api/material/extract` reads files in memory (never written to disk) and splits them into
+   numbered passages (P1, P2, ...). Past exams are kept as plain text, used only as style examples.
+2. **Generating:** `POST /api/generate` asks the AI for rounds in the chosen format. Every question, paragraph and
+   claim must cite a passage id and quote it.
+3. **Checking** (`backend/app/genpack.py`):
+   - Every quote must appear word for word in the cited passage; spacing and punctuation are ignored.
+     A fabricated quote drops the item.
+   - Answer keys must be internally consistent: for example, the AI's wrong answer must really be the one marked wrong.
+   - A second, independent AI call reviews each item against its cited passages. Anything it doesn't approve is dropped.
+4. **Labelling:** these rounds say "generated from your document and checked against it", never "verified".
+   Calculus keeps its SymPy-verified label.
+5. **Storing:** the pack (including the passages) is saved only in the uploader's browser. For a class game, the
+   professor must review and approve a round; only that round is sent to the server and it's deleted with the room.
+
+Written Your Turn answers, oral examiner scores and candidate verdicts are graded by AI and labelled as such.
+Multiple-choice answers are graded exactly. The examiner and the candidate both run through a server-side check
+that replaces any reply repeating the answer key before the question is closed.
+
+`LLM_PROVIDER=fake` runs a simulated AI so the whole pipeline can be tested without a key. Everything it produces
+is marked "test mode" in the app. `backend/tests/test_ai.py` uses it to test fabricated quotes, review
+rejections, leak attempts, rate limits and class games with generated rounds.
 
 ## How verification works
 
@@ -129,7 +157,7 @@ python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements-dev.txt
 uvicorn app.main:app --reload --port 8000
-pytest                           # 12 tests
+pytest                           # 30 tests
 ```
 
 With no `VITE_API_URL` set, the frontend talks to `http://localhost:8000`. To try several teams on one computer, open extra browser windows in private/incognito mode: each one counts as a separate team.
@@ -183,6 +211,19 @@ Then connect the website to it:
 7. **Deployments** → the latest one → **⋯ → Redeploy**. This is required: the address is built into
    the site at build time, so saving the variable alone changes nothing.
 
+### Turning on the AI features (any subject)
+
+In Render → your service → **Environment**, add:
+
+- `LLM_PROVIDER` = `gemini`
+- `GEMINI_API_KEY` = your key from aistudio.google.com (**Get API key**). The free tier is fine for a hackathon.
+  On the free tier Google may use what you send to improve its products, and the app tells uploaders this.
+- Optional: `ACCESS_CODE` = any word, so only people you give it to can use the AI (protects your quota).
+- Optional: `LLM_MODEL`, if the default model name stops working (copy a current one from AI Studio).
+
+Save, and Render restarts the server. Check `https://<your-render-url>/api/ai/status`: `"enabled": true`.
+To use Claude instead, set `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY` (from console.anthropic.com).
+
 ### Render free tier: what to know before a demo
 
 - It **sleeps after 15 minutes without traffic**. The first request after that takes about a minute.
@@ -227,6 +268,10 @@ With fewer than 3 teams, the breakdown stays hidden; use **Show sample data inst
 - The Render free tier sleeps and loses open rooms on restart (see above).
 - Typed-answer checking covers polynomials, powers of x and exact numbers. Exercises needing sin, e^x or
   square roots in the answer aren't offered as Your Turn yet (they appear in AI rounds, which use options).
+- Uploaded material: scanned PDFs (photos of pages) have no text to read yet. Very long material is cut to about
+  90,000 characters per pack. Generated rounds are carefully checked but not proven: a professor should review
+  rounds before class, and students should trust their course if something looks wrong.
+- The simulated AI (test mode) produces placeholder content; real content needs a key.
 - Readiness uses the last 5 rounds and exercises per topic and needs at least 2 exercises before showing
   a score. It describes practice on this device only, not overall ability.
 - `npm audit` reports advisories in dev-only tools (Vite, Vitest) and two moderate React Router issues that

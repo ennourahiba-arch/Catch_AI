@@ -1,0 +1,4646 @@
+{
+  "pack_id": "calculus1",
+  "subject": "Calculus 1",
+  "pack_version": "1.0.0",
+  "content_hash": "d82fa99f8d7d5c81",
+  "topics": [
+    {
+      "id": "derivatives",
+      "name": "Derivatives"
+    },
+    {
+      "id": "chain-rule",
+      "name": "The chain rule"
+    },
+    {
+      "id": "critical-points",
+      "name": "Critical points"
+    },
+    {
+      "id": "closed-interval",
+      "name": "Max & min on closed intervals"
+    }
+  ],
+  "misconceptions": {
+    "wrong_derivative": "Incorrect derivative",
+    "power_rule_error": "Power rule applied incorrectly to a negative exponent",
+    "forgot_inner_derivative": "Forgot to multiply by the inner function's derivative",
+    "solved_f_not_fprime": "Solved f(x) = 0 instead of f′(x) = 0",
+    "forgot_endpoints": "Forgot to evaluate the interval endpoints",
+    "outside_interval": "Used a critical point outside the interval",
+    "bad_evaluation": "Incorrect evaluation of f at a point",
+    "local_vs_absolute": "Confused a local extremum with the absolute extremum",
+    "misclassified_extrema": "Mixed up local maximum and local minimum",
+    "algebra_error": "Algebraic simplification or factoring error"
+  },
+  "scoring": {
+    "catch": 2,
+    "fix": 1,
+    "explain": 1,
+    "no_mistake": 4
+  },
+  "rounds": [
+    {
+      "id": "der-01",
+      "topic": "derivatives",
+      "difficulty": 1,
+      "problem_statement": {
+        "text": "Differentiate the function.",
+        "latex": "f(x) = 2x^{3} + \\frac{5}{x^{2}}"
+      },
+      "steps": [
+        {
+          "n": 1,
+          "text": "Rewrite the fraction as a power of x.",
+          "latex": "f(x) = 2x^{3} + 5x^{-2}",
+          "claim": {
+            "type": "equivalent",
+            "expr": "2*x**3 + 5*x**(-2)",
+            "to": "2*x**3 + 5/x**2"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 2,
+          "text": "Differentiate the first term with the power rule.",
+          "latex": "\\frac{d}{dx}\\left(2x^{3}\\right) = 6 x^{2}",
+          "claim": {
+            "type": "derivative",
+            "f": "2*x**3",
+            "expr": "6*x**2"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 3,
+          "text": "Differentiate the second term with the power rule.",
+          "latex": "\\frac{d}{dx}\\left(5x^{-2}\\right) = -10x^{-1}",
+          "claim": {
+            "type": "derivative",
+            "f": "5*x**(-2)",
+            "expr": "-10*x**(-1)"
+          },
+          "verdict": "invalid"
+        },
+        {
+          "n": 4,
+          "text": "Add the two derivatives.",
+          "latex": "f'(x) = 6 x^{2} - 10x^{-1}",
+          "claim": {
+            "type": "derivative",
+            "f": "2*x**3 + 5/x**2",
+            "expr": "6*x**2 + -10*x**(-1)"
+          },
+          "verdict": "invalid"
+        }
+      ],
+      "first_incorrect_step": 3,
+      "is_fully_correct": false,
+      "mistake_label": "power_rule_error",
+      "corrected_step": {
+        "text": "Second term derivative",
+        "latex": "\\frac{d}{dx}\\left(5x^{-2}\\right) = -10x^{-3}",
+        "claim": {
+          "type": "derivative",
+          "f": "5*x**(-2)",
+          "expr": "-10*x**(-3)"
+        },
+        "step": 3
+      },
+      "fix_options": [
+        {
+          "id": "f1",
+          "text": "Second term derivative",
+          "latex": "\\frac{d}{dx}\\left(5x^{-2}\\right) = -10x^{-2}",
+          "claim": {
+            "type": "derivative",
+            "f": "5*x**(-2)",
+            "expr": "-10*x**(-2)"
+          }
+        },
+        {
+          "id": "f2",
+          "text": "Second term derivative",
+          "latex": "\\frac{d}{dx}\\left(5x^{-2}\\right) = 10x^{-3}",
+          "claim": {
+            "type": "derivative",
+            "f": "5*x**(-2)",
+            "expr": "10*x**(-3)"
+          }
+        },
+        {
+          "id": "f3",
+          "text": "Second term derivative",
+          "latex": "\\frac{d}{dx}\\left(5x^{-2}\\right) = -10x^{-1}",
+          "claim": {
+            "type": "derivative",
+            "f": "5*x**(-2)",
+            "expr": "-10*x**(-1)"
+          }
+        },
+        {
+          "id": "f4",
+          "text": "Second term derivative",
+          "latex": "\\frac{d}{dx}\\left(5x^{-2}\\right) = -10x^{-3}",
+          "claim": {
+            "type": "derivative",
+            "f": "5*x**(-2)",
+            "expr": "-10*x**(-3)"
+          }
+        }
+      ],
+      "correct_fix": "f4",
+      "why_options": [
+        {
+          "id": "algebra_error",
+          "label": "Algebraic simplification or factoring error"
+        },
+        {
+          "id": "solved_f_not_fprime",
+          "label": "Solved f(x) = 0 instead of f′(x) = 0"
+        },
+        {
+          "id": "power_rule_error",
+          "label": "Power rule applied incorrectly to a negative exponent"
+        },
+        {
+          "id": "forgot_inner_derivative",
+          "label": "Forgot to multiply by the inner function's derivative"
+        }
+      ],
+      "correct_why": "power_rule_error",
+      "correct_solution": [
+        {
+          "text": "Rewrite the fraction as a power of x.",
+          "latex": "f(x) = 2x^{3} + 5x^{-2}"
+        },
+        {
+          "text": "Differentiate the first term with the power rule.",
+          "latex": "\\frac{d}{dx}\\left(2x^{3}\\right) = 6 x^{2}"
+        },
+        {
+          "text": "Power rule: bring the exponent down, then subtract 1 from it (−2 − 1 = −3).",
+          "latex": "\\frac{d}{dx}\\left(5x^{-2}\\right) = -10x^{-3}"
+        },
+        {
+          "text": "Combine.",
+          "latex": "f'(x) = 6 x^{2} - \\frac{10}{x^{3}}"
+        }
+      ],
+      "verified_answer": {
+        "latex": "f'(x) = 6 x^{2} - \\frac{10}{x^{3}}",
+        "claim": {
+          "type": "derivative",
+          "f": "2*x**3 + 5/x**2",
+          "expr": "6*x**2 - 10/x**3"
+        }
+      },
+      "key_lesson": "With negative exponents, 'subtract one' moves the exponent further from zero: x^{-2} becomes x^{-3}.",
+      "hint_ladder": [
+        "Which of the four steps uses the power rule on a negative exponent?",
+        "What is −2 − 1? Use it as the new exponent of x in the derivative of 5x^(−2).",
+        "Write d/dx of x^n = n·x^(n−1) with n = −2, then multiply by 5."
+      ],
+      "source_provenance": {
+        "method": "template",
+        "description": "Hand-authored misconception template over SymPy-computed mathematics. Not LLM output.",
+        "llm": null
+      },
+      "verification_status": {
+        "status": "verified",
+        "checker": "sympy 1.14.0",
+        "claims_checked": 13,
+        "step_verdicts": [
+          "2*x**3 + 5*x**(-2) vs 2*x**3 + 5/x**2",
+          "d/dx of 2*x**3 is 6*x**2",
+          "d/dx of 5*x**(-2) is -10/x**3",
+          "d/dx of 2*x**3 + 5/x**2 is 2*(3*x**5 - 5)/x**3"
+        ]
+      },
+      "pack_version": "1.0.0"
+    },
+    {
+      "id": "der-02",
+      "topic": "derivatives",
+      "difficulty": 1,
+      "problem_statement": {
+        "text": "Differentiate the function.",
+        "latex": "f(x) = 4x^{3} + \\frac{3}{x^{2}}"
+      },
+      "steps": [
+        {
+          "n": 1,
+          "text": "Rewrite the fraction as a power of x.",
+          "latex": "f(x) = 4x^{3} + 3x^{-2}",
+          "claim": {
+            "type": "equivalent",
+            "expr": "4*x**3 + 3*x**(-2)",
+            "to": "4*x**3 + 3/x**2"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 2,
+          "text": "Differentiate the first term with the power rule.",
+          "latex": "\\frac{d}{dx}\\left(4x^{3}\\right) = 12 x^{2}",
+          "claim": {
+            "type": "derivative",
+            "f": "4*x**3",
+            "expr": "12*x**2"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 3,
+          "text": "Differentiate the second term with the power rule.",
+          "latex": "\\frac{d}{dx}\\left(3x^{-2}\\right) = -6x^{-1}",
+          "claim": {
+            "type": "derivative",
+            "f": "3*x**(-2)",
+            "expr": "-6*x**(-1)"
+          },
+          "verdict": "invalid"
+        },
+        {
+          "n": 4,
+          "text": "Add the two derivatives.",
+          "latex": "f'(x) = 12 x^{2} - 6x^{-1}",
+          "claim": {
+            "type": "derivative",
+            "f": "4*x**3 + 3/x**2",
+            "expr": "12*x**2 + -6*x**(-1)"
+          },
+          "verdict": "invalid"
+        }
+      ],
+      "first_incorrect_step": 3,
+      "is_fully_correct": false,
+      "mistake_label": "power_rule_error",
+      "corrected_step": {
+        "text": "Second term derivative",
+        "latex": "\\frac{d}{dx}\\left(3x^{-2}\\right) = -6x^{-3}",
+        "claim": {
+          "type": "derivative",
+          "f": "3*x**(-2)",
+          "expr": "-6*x**(-3)"
+        },
+        "step": 3
+      },
+      "fix_options": [
+        {
+          "id": "f1",
+          "text": "Second term derivative",
+          "latex": "\\frac{d}{dx}\\left(3x^{-2}\\right) = 6x^{-3}",
+          "claim": {
+            "type": "derivative",
+            "f": "3*x**(-2)",
+            "expr": "6*x**(-3)"
+          }
+        },
+        {
+          "id": "f2",
+          "text": "Second term derivative",
+          "latex": "\\frac{d}{dx}\\left(3x^{-2}\\right) = -6x^{-3}",
+          "claim": {
+            "type": "derivative",
+            "f": "3*x**(-2)",
+            "expr": "-6*x**(-3)"
+          }
+        },
+        {
+          "id": "f3",
+          "text": "Second term derivative",
+          "latex": "\\frac{d}{dx}\\left(3x^{-2}\\right) = -6x^{-2}",
+          "claim": {
+            "type": "derivative",
+            "f": "3*x**(-2)",
+            "expr": "-6*x**(-2)"
+          }
+        },
+        {
+          "id": "f4",
+          "text": "Second term derivative",
+          "latex": "\\frac{d}{dx}\\left(3x^{-2}\\right) = -6x^{-1}",
+          "claim": {
+            "type": "derivative",
+            "f": "3*x**(-2)",
+            "expr": "-6*x**(-1)"
+          }
+        }
+      ],
+      "correct_fix": "f2",
+      "why_options": [
+        {
+          "id": "algebra_error",
+          "label": "Algebraic simplification or factoring error"
+        },
+        {
+          "id": "forgot_inner_derivative",
+          "label": "Forgot to multiply by the inner function's derivative"
+        },
+        {
+          "id": "solved_f_not_fprime",
+          "label": "Solved f(x) = 0 instead of f′(x) = 0"
+        },
+        {
+          "id": "power_rule_error",
+          "label": "Power rule applied incorrectly to a negative exponent"
+        }
+      ],
+      "correct_why": "power_rule_error",
+      "correct_solution": [
+        {
+          "text": "Rewrite the fraction as a power of x.",
+          "latex": "f(x) = 4x^{3} + 3x^{-2}"
+        },
+        {
+          "text": "Differentiate the first term with the power rule.",
+          "latex": "\\frac{d}{dx}\\left(4x^{3}\\right) = 12 x^{2}"
+        },
+        {
+          "text": "Power rule: bring the exponent down, then subtract 1 from it (−2 − 1 = −3).",
+          "latex": "\\frac{d}{dx}\\left(3x^{-2}\\right) = -6x^{-3}"
+        },
+        {
+          "text": "Combine.",
+          "latex": "f'(x) = 12 x^{2} - \\frac{6}{x^{3}}"
+        }
+      ],
+      "verified_answer": {
+        "latex": "f'(x) = 12 x^{2} - \\frac{6}{x^{3}}",
+        "claim": {
+          "type": "derivative",
+          "f": "4*x**3 + 3/x**2",
+          "expr": "12*x**2 - 6/x**3"
+        }
+      },
+      "key_lesson": "With negative exponents, 'subtract one' moves the exponent further from zero: x^{-2} becomes x^{-3}.",
+      "hint_ladder": [
+        "Which of the four steps uses the power rule on a negative exponent?",
+        "What is −2 − 1? Use it as the new exponent of x in the derivative of 3x^(−2).",
+        "Write d/dx of x^n = n·x^(n−1) with n = −2, then multiply by 3."
+      ],
+      "source_provenance": {
+        "method": "template",
+        "description": "Hand-authored misconception template over SymPy-computed mathematics. Not LLM output.",
+        "llm": null
+      },
+      "verification_status": {
+        "status": "verified",
+        "checker": "sympy 1.14.0",
+        "claims_checked": 13,
+        "step_verdicts": [
+          "4*x**3 + 3*x**(-2) vs 4*x**3 + 3/x**2",
+          "d/dx of 4*x**3 is 12*x**2",
+          "d/dx of 3*x**(-2) is -6/x**3",
+          "d/dx of 4*x**3 + 3/x**2 is 6*(2*x**5 - 1)/x**3"
+        ]
+      },
+      "pack_version": "1.0.0"
+    },
+    {
+      "id": "der-03",
+      "topic": "derivatives",
+      "difficulty": 1,
+      "problem_statement": {
+        "text": "Differentiate the function.",
+        "latex": "f(x) = 1x^{3} + \\frac{7}{x^{2}}"
+      },
+      "steps": [
+        {
+          "n": 1,
+          "text": "Rewrite the fraction as a power of x.",
+          "latex": "f(x) = 1x^{3} + 7x^{-2}",
+          "claim": {
+            "type": "equivalent",
+            "expr": "1*x**3 + 7*x**(-2)",
+            "to": "1*x**3 + 7/x**2"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 2,
+          "text": "Differentiate the first term with the power rule.",
+          "latex": "\\frac{d}{dx}\\left(1x^{3}\\right) = 3 x^{2}",
+          "claim": {
+            "type": "derivative",
+            "f": "1*x**3",
+            "expr": "3*x**2"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 3,
+          "text": "Differentiate the second term with the power rule.",
+          "latex": "\\frac{d}{dx}\\left(7x^{-2}\\right) = -14x^{-1}",
+          "claim": {
+            "type": "derivative",
+            "f": "7*x**(-2)",
+            "expr": "-14*x**(-1)"
+          },
+          "verdict": "invalid"
+        },
+        {
+          "n": 4,
+          "text": "Add the two derivatives.",
+          "latex": "f'(x) = 3 x^{2} - 14x^{-1}",
+          "claim": {
+            "type": "derivative",
+            "f": "1*x**3 + 7/x**2",
+            "expr": "3*x**2 + -14*x**(-1)"
+          },
+          "verdict": "invalid"
+        }
+      ],
+      "first_incorrect_step": 3,
+      "is_fully_correct": false,
+      "mistake_label": "power_rule_error",
+      "corrected_step": {
+        "text": "Second term derivative",
+        "latex": "\\frac{d}{dx}\\left(7x^{-2}\\right) = -14x^{-3}",
+        "claim": {
+          "type": "derivative",
+          "f": "7*x**(-2)",
+          "expr": "-14*x**(-3)"
+        },
+        "step": 3
+      },
+      "fix_options": [
+        {
+          "id": "f1",
+          "text": "Second term derivative",
+          "latex": "\\frac{d}{dx}\\left(7x^{-2}\\right) = -14x^{-1}",
+          "claim": {
+            "type": "derivative",
+            "f": "7*x**(-2)",
+            "expr": "-14*x**(-1)"
+          }
+        },
+        {
+          "id": "f2",
+          "text": "Second term derivative",
+          "latex": "\\frac{d}{dx}\\left(7x^{-2}\\right) = 14x^{-3}",
+          "claim": {
+            "type": "derivative",
+            "f": "7*x**(-2)",
+            "expr": "14*x**(-3)"
+          }
+        },
+        {
+          "id": "f3",
+          "text": "Second term derivative",
+          "latex": "\\frac{d}{dx}\\left(7x^{-2}\\right) = -14x^{-2}",
+          "claim": {
+            "type": "derivative",
+            "f": "7*x**(-2)",
+            "expr": "-14*x**(-2)"
+          }
+        },
+        {
+          "id": "f4",
+          "text": "Second term derivative",
+          "latex": "\\frac{d}{dx}\\left(7x^{-2}\\right) = -14x^{-3}",
+          "claim": {
+            "type": "derivative",
+            "f": "7*x**(-2)",
+            "expr": "-14*x**(-3)"
+          }
+        }
+      ],
+      "correct_fix": "f4",
+      "why_options": [
+        {
+          "id": "solved_f_not_fprime",
+          "label": "Solved f(x) = 0 instead of f′(x) = 0"
+        },
+        {
+          "id": "power_rule_error",
+          "label": "Power rule applied incorrectly to a negative exponent"
+        },
+        {
+          "id": "algebra_error",
+          "label": "Algebraic simplification or factoring error"
+        },
+        {
+          "id": "forgot_inner_derivative",
+          "label": "Forgot to multiply by the inner function's derivative"
+        }
+      ],
+      "correct_why": "power_rule_error",
+      "correct_solution": [
+        {
+          "text": "Rewrite the fraction as a power of x.",
+          "latex": "f(x) = 1x^{3} + 7x^{-2}"
+        },
+        {
+          "text": "Differentiate the first term with the power rule.",
+          "latex": "\\frac{d}{dx}\\left(1x^{3}\\right) = 3 x^{2}"
+        },
+        {
+          "text": "Power rule: bring the exponent down, then subtract 1 from it (−2 − 1 = −3).",
+          "latex": "\\frac{d}{dx}\\left(7x^{-2}\\right) = -14x^{-3}"
+        },
+        {
+          "text": "Combine.",
+          "latex": "f'(x) = 3 x^{2} - \\frac{14}{x^{3}}"
+        }
+      ],
+      "verified_answer": {
+        "latex": "f'(x) = 3 x^{2} - \\frac{14}{x^{3}}",
+        "claim": {
+          "type": "derivative",
+          "f": "1*x**3 + 7/x**2",
+          "expr": "3*x**2 - 14/x**3"
+        }
+      },
+      "key_lesson": "With negative exponents, 'subtract one' moves the exponent further from zero: x^{-2} becomes x^{-3}.",
+      "hint_ladder": [
+        "Which of the four steps uses the power rule on a negative exponent?",
+        "What is −2 − 1? Use it as the new exponent of x in the derivative of 7x^(−2).",
+        "Write d/dx of x^n = n·x^(n−1) with n = −2, then multiply by 7."
+      ],
+      "source_provenance": {
+        "method": "template",
+        "description": "Hand-authored misconception template over SymPy-computed mathematics. Not LLM output.",
+        "llm": null
+      },
+      "verification_status": {
+        "status": "verified",
+        "checker": "sympy 1.14.0",
+        "claims_checked": 13,
+        "step_verdicts": [
+          "1*x**3 + 7*x**(-2) vs 1*x**3 + 7/x**2",
+          "d/dx of 1*x**3 is 3*x**2",
+          "d/dx of 7*x**(-2) is -14/x**3",
+          "d/dx of 1*x**3 + 7/x**2 is (3*x**5 - 14)/x**3"
+        ]
+      },
+      "pack_version": "1.0.0"
+    },
+    {
+      "id": "der-04",
+      "topic": "derivatives",
+      "difficulty": 1,
+      "problem_statement": {
+        "text": "Differentiate the function.",
+        "latex": "f(x) = 3x^{3} + \\frac{2}{x^{2}}"
+      },
+      "steps": [
+        {
+          "n": 1,
+          "text": "Rewrite the fraction as a power of x.",
+          "latex": "f(x) = 3x^{3} + 2x^{-2}",
+          "claim": {
+            "type": "equivalent",
+            "expr": "3*x**3 + 2*x**(-2)",
+            "to": "3*x**3 + 2/x**2"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 2,
+          "text": "Differentiate the first term with the power rule.",
+          "latex": "\\frac{d}{dx}\\left(3x^{3}\\right) = 9 x^{2}",
+          "claim": {
+            "type": "derivative",
+            "f": "3*x**3",
+            "expr": "9*x**2"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 3,
+          "text": "Differentiate the second term with the power rule.",
+          "latex": "\\frac{d}{dx}\\left(2x^{-2}\\right) = -4x^{-3}",
+          "claim": {
+            "type": "derivative",
+            "f": "2*x**(-2)",
+            "expr": "-4*x**(-3)"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 4,
+          "text": "Add the two derivatives.",
+          "latex": "f'(x) = 9 x^{2} - 4x^{-3}",
+          "claim": {
+            "type": "derivative",
+            "f": "3*x**3 + 2/x**2",
+            "expr": "9*x**2 + -4*x**(-3)"
+          },
+          "verdict": "valid"
+        }
+      ],
+      "first_incorrect_step": null,
+      "is_fully_correct": true,
+      "mistake_label": null,
+      "corrected_step": null,
+      "fix_options": [],
+      "correct_fix": null,
+      "why_options": [],
+      "correct_why": null,
+      "correct_solution": [
+        {
+          "text": "Rewrite the fraction as a power of x.",
+          "latex": "f(x) = 3x^{3} + 2x^{-2}"
+        },
+        {
+          "text": "Differentiate the first term with the power rule.",
+          "latex": "\\frac{d}{dx}\\left(3x^{3}\\right) = 9 x^{2}"
+        },
+        {
+          "text": "Power rule: bring the exponent down, then subtract 1 from it (−2 − 1 = −3).",
+          "latex": "\\frac{d}{dx}\\left(2x^{-2}\\right) = -4x^{-3}"
+        },
+        {
+          "text": "Combine.",
+          "latex": "f'(x) = 9 x^{2} - \\frac{4}{x^{3}}"
+        }
+      ],
+      "verified_answer": {
+        "latex": "f'(x) = 9 x^{2} - \\frac{4}{x^{3}}",
+        "claim": {
+          "type": "derivative",
+          "f": "3*x**3 + 2/x**2",
+          "expr": "9*x**2 - 4/x**3"
+        }
+      },
+      "key_lesson": "With negative exponents, 'subtract one' moves the exponent further from zero: x^{-2} becomes x^{-3}.",
+      "hint_ladder": [
+        "Which of the four steps uses the power rule on a negative exponent?",
+        "What is −2 − 1? Use it as the new exponent of x in the derivative of 2x^(−2).",
+        "Write d/dx of x^n = n·x^(n−1) with n = −2, then multiply by 2."
+      ],
+      "source_provenance": {
+        "method": "template",
+        "description": "Hand-authored misconception template over SymPy-computed mathematics. Not LLM output.",
+        "llm": null
+      },
+      "verification_status": {
+        "status": "verified",
+        "checker": "sympy 1.14.0",
+        "claims_checked": 9,
+        "step_verdicts": [
+          "3*x**3 + 2*x**(-2) vs 3*x**3 + 2/x**2",
+          "d/dx of 3*x**3 is 9*x**2",
+          "d/dx of 2*x**(-2) is -4/x**3",
+          "d/dx of 3*x**3 + 2/x**2 is (9*x**5 - 4)/x**3"
+        ]
+      },
+      "pack_version": "1.0.0"
+    },
+    {
+      "id": "chn-01",
+      "topic": "chain-rule",
+      "difficulty": 1,
+      "problem_statement": {
+        "text": "Differentiate the function.",
+        "latex": "f(x) = \\left(3 x + 1\\right)^{5}"
+      },
+      "steps": [
+        {
+          "n": 1,
+          "text": "Identify the outer and inner functions.",
+          "latex": "\\text{outer: } u^{5},\\quad u = 3x + 1",
+          "claim": {
+            "type": "composition",
+            "outer": "u**5",
+            "inner": "3*x + 1",
+            "f": "(3*x + 1)**5"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 2,
+          "text": "Differentiate the outer function with respect to u.",
+          "latex": "\\frac{d}{du}\\left(u^{5}\\right) = 5 u^{4}",
+          "claim": {
+            "type": "derivative",
+            "f": "u**5",
+            "expr": "5*u**4",
+            "var": "u"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 3,
+          "text": "Differentiate the inner function.",
+          "latex": "\\frac{du}{dx} = 3",
+          "claim": {
+            "type": "derivative",
+            "f": "3*x + 1",
+            "expr": "3"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 4,
+          "text": "Put it together.",
+          "latex": "f'(x) = 5 \\left(3 x + 1\\right)^{4}",
+          "claim": {
+            "type": "derivative",
+            "f": "(3*x + 1)**5",
+            "expr": "5*(3*x + 1)**4"
+          },
+          "verdict": "invalid"
+        }
+      ],
+      "first_incorrect_step": 4,
+      "is_fully_correct": false,
+      "mistake_label": "forgot_inner_derivative",
+      "corrected_step": {
+        "text": "Combined derivative",
+        "latex": "f'(x) = 15 \\left(3 x + 1\\right)^{4}",
+        "claim": {
+          "type": "derivative",
+          "f": "(3*x + 1)**5",
+          "expr": "15*(3*x + 1)**4"
+        },
+        "step": 4
+      },
+      "fix_options": [
+        {
+          "id": "f1",
+          "text": "Combined derivative",
+          "latex": "f'(x) = 3",
+          "claim": {
+            "type": "derivative",
+            "f": "(3*x + 1)**5",
+            "expr": "3"
+          }
+        },
+        {
+          "id": "f2",
+          "text": "Combined derivative",
+          "latex": "f'(x) = 15 \\left(3 x + 1\\right)^{4}",
+          "claim": {
+            "type": "derivative",
+            "f": "(3*x + 1)**5",
+            "expr": "15*(3*x + 1)**4"
+          }
+        },
+        {
+          "id": "f3",
+          "text": "Combined derivative",
+          "latex": "f'(x) = 5 \\left(3 x + 1\\right)^{4}",
+          "claim": {
+            "type": "derivative",
+            "f": "(3*x + 1)**5",
+            "expr": "5*(3*x + 1)**4"
+          }
+        },
+        {
+          "id": "f4",
+          "text": "Combined derivative",
+          "latex": "f'(x) = 30 \\left(3 x + 1\\right)^{4}",
+          "claim": {
+            "type": "derivative",
+            "f": "(3*x + 1)**5",
+            "expr": "30*(3*x + 1)**4"
+          }
+        }
+      ],
+      "correct_fix": "f2",
+      "why_options": [
+        {
+          "id": "forgot_inner_derivative",
+          "label": "Forgot to multiply by the inner function's derivative"
+        },
+        {
+          "id": "wrong_derivative",
+          "label": "Incorrect derivative"
+        },
+        {
+          "id": "power_rule_error",
+          "label": "Power rule applied incorrectly to a negative exponent"
+        },
+        {
+          "id": "algebra_error",
+          "label": "Algebraic simplification or factoring error"
+        }
+      ],
+      "correct_why": "forgot_inner_derivative",
+      "correct_solution": [
+        {
+          "text": "Identify the outer and inner functions.",
+          "latex": "\\text{outer: } u^{5},\\quad u = 3x + 1"
+        },
+        {
+          "text": "Differentiate the outer function with respect to u.",
+          "latex": "\\frac{d}{du}\\left(u^{5}\\right) = 5 u^{4}"
+        },
+        {
+          "text": "Differentiate the inner function.",
+          "latex": "\\frac{du}{dx} = 3"
+        },
+        {
+          "text": "Chain rule: outer derivative (evaluated at the inner function) times inner derivative.",
+          "latex": "f'(x) = 5 \\left(3 x + 1\\right)^{4}\\cdot 3 = 15 \\left(3 x + 1\\right)^{4}"
+        }
+      ],
+      "verified_answer": {
+        "latex": "f'(x) = 15 \\left(3 x + 1\\right)^{4}",
+        "claim": {
+          "type": "derivative",
+          "f": "(3*x + 1)**5",
+          "expr": "15*(3*x + 1)**4"
+        }
+      },
+      "key_lesson": "Chain rule: differentiate the outside, keep the inside, then multiply by the derivative of the inside.",
+      "hint_ladder": [
+        "Steps 1–3 compute two separate derivatives. Does step 4 use both of them?",
+        "What is the derivative of the inner function u = 3x + 1?",
+        "Write f'(x) = (outer derivative at u) × (du/dx) and compare it with step 4."
+      ],
+      "source_provenance": {
+        "method": "template",
+        "description": "Hand-authored misconception template over SymPy-computed mathematics. Not LLM output.",
+        "llm": null
+      },
+      "verification_status": {
+        "status": "verified",
+        "checker": "sympy 1.14.0",
+        "claims_checked": 13,
+        "step_verdicts": [
+          "outer∘inner = (3*x + 1)**5",
+          "d/du of u**5 is 5*u**4",
+          "d/dx of 3*x + 1 is 3",
+          "d/dx of (3*x + 1)**5 is 15*(3*x + 1)**4"
+        ]
+      },
+      "pack_version": "1.0.0"
+    },
+    {
+      "id": "chn-02",
+      "topic": "chain-rule",
+      "difficulty": 1,
+      "problem_statement": {
+        "text": "Differentiate the function.",
+        "latex": "f(x) = \\left(2 x - 5\\right)^{4}"
+      },
+      "steps": [
+        {
+          "n": 1,
+          "text": "Identify the outer and inner functions.",
+          "latex": "\\text{outer: } u^{4},\\quad u = 2x - 5",
+          "claim": {
+            "type": "composition",
+            "outer": "u**4",
+            "inner": "2*x - 5",
+            "f": "(2*x - 5)**4"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 2,
+          "text": "Differentiate the outer function with respect to u.",
+          "latex": "\\frac{d}{du}\\left(u^{4}\\right) = 4 u^{3}",
+          "claim": {
+            "type": "derivative",
+            "f": "u**4",
+            "expr": "4*u**3",
+            "var": "u"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 3,
+          "text": "Differentiate the inner function.",
+          "latex": "\\frac{du}{dx} = 2",
+          "claim": {
+            "type": "derivative",
+            "f": "2*x - 5",
+            "expr": "2"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 4,
+          "text": "Put it together.",
+          "latex": "f'(x) = 4 \\left(2 x - 5\\right)^{3}",
+          "claim": {
+            "type": "derivative",
+            "f": "(2*x - 5)**4",
+            "expr": "4*(2*x - 5)**3"
+          },
+          "verdict": "invalid"
+        }
+      ],
+      "first_incorrect_step": 4,
+      "is_fully_correct": false,
+      "mistake_label": "forgot_inner_derivative",
+      "corrected_step": {
+        "text": "Combined derivative",
+        "latex": "f'(x) = 8 \\left(2 x - 5\\right)^{3}",
+        "claim": {
+          "type": "derivative",
+          "f": "(2*x - 5)**4",
+          "expr": "8*(2*x - 5)**3"
+        },
+        "step": 4
+      },
+      "fix_options": [
+        {
+          "id": "f1",
+          "text": "Combined derivative",
+          "latex": "f'(x) = 8 \\left(2 x - 5\\right)^{3}",
+          "claim": {
+            "type": "derivative",
+            "f": "(2*x - 5)**4",
+            "expr": "8*(2*x - 5)**3"
+          }
+        },
+        {
+          "id": "f2",
+          "text": "Combined derivative",
+          "latex": "f'(x) = 2",
+          "claim": {
+            "type": "derivative",
+            "f": "(2*x - 5)**4",
+            "expr": "2"
+          }
+        },
+        {
+          "id": "f3",
+          "text": "Combined derivative",
+          "latex": "f'(x) = 16 \\left(2 x - 5\\right)^{3}",
+          "claim": {
+            "type": "derivative",
+            "f": "(2*x - 5)**4",
+            "expr": "16*(2*x - 5)**3"
+          }
+        },
+        {
+          "id": "f4",
+          "text": "Combined derivative",
+          "latex": "f'(x) = 4 \\left(2 x - 5\\right)^{3}",
+          "claim": {
+            "type": "derivative",
+            "f": "(2*x - 5)**4",
+            "expr": "4*(2*x - 5)**3"
+          }
+        }
+      ],
+      "correct_fix": "f1",
+      "why_options": [
+        {
+          "id": "power_rule_error",
+          "label": "Power rule applied incorrectly to a negative exponent"
+        },
+        {
+          "id": "algebra_error",
+          "label": "Algebraic simplification or factoring error"
+        },
+        {
+          "id": "forgot_inner_derivative",
+          "label": "Forgot to multiply by the inner function's derivative"
+        },
+        {
+          "id": "wrong_derivative",
+          "label": "Incorrect derivative"
+        }
+      ],
+      "correct_why": "forgot_inner_derivative",
+      "correct_solution": [
+        {
+          "text": "Identify the outer and inner functions.",
+          "latex": "\\text{outer: } u^{4},\\quad u = 2x - 5"
+        },
+        {
+          "text": "Differentiate the outer function with respect to u.",
+          "latex": "\\frac{d}{du}\\left(u^{4}\\right) = 4 u^{3}"
+        },
+        {
+          "text": "Differentiate the inner function.",
+          "latex": "\\frac{du}{dx} = 2"
+        },
+        {
+          "text": "Chain rule: outer derivative (evaluated at the inner function) times inner derivative.",
+          "latex": "f'(x) = 4 \\left(2 x - 5\\right)^{3}\\cdot 2 = 8 \\left(2 x - 5\\right)^{3}"
+        }
+      ],
+      "verified_answer": {
+        "latex": "f'(x) = 8 \\left(2 x - 5\\right)^{3}",
+        "claim": {
+          "type": "derivative",
+          "f": "(2*x - 5)**4",
+          "expr": "8*(2*x - 5)**3"
+        }
+      },
+      "key_lesson": "Chain rule: differentiate the outside, keep the inside, then multiply by the derivative of the inside.",
+      "hint_ladder": [
+        "Steps 1–3 compute two separate derivatives. Does step 4 use both of them?",
+        "What is the derivative of the inner function u = 2x - 5?",
+        "Write f'(x) = (outer derivative at u) × (du/dx) and compare it with step 4."
+      ],
+      "source_provenance": {
+        "method": "template",
+        "description": "Hand-authored misconception template over SymPy-computed mathematics. Not LLM output.",
+        "llm": null
+      },
+      "verification_status": {
+        "status": "verified",
+        "checker": "sympy 1.14.0",
+        "claims_checked": 13,
+        "step_verdicts": [
+          "outer∘inner = (2*x - 5)**4",
+          "d/du of u**4 is 4*u**3",
+          "d/dx of 2*x - 5 is 2",
+          "d/dx of (2*x - 5)**4 is 8*(2*x - 5)**3"
+        ]
+      },
+      "pack_version": "1.0.0"
+    },
+    {
+      "id": "chn-03",
+      "topic": "chain-rule",
+      "difficulty": 2,
+      "problem_statement": {
+        "text": "Differentiate the function.",
+        "latex": "f(x) = \\sin{\\left(3 x^{2} \\right)}"
+      },
+      "steps": [
+        {
+          "n": 1,
+          "text": "Identify the outer and inner functions.",
+          "latex": "\\text{outer: } \\sin u,\\quad u = 3x^{2}",
+          "claim": {
+            "type": "composition",
+            "outer": "sin(u)",
+            "inner": "3*x**2",
+            "f": "sin(3*x**2)"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 2,
+          "text": "Differentiate the outer function with respect to u.",
+          "latex": "\\frac{d}{du}\\left(\\sin u\\right) = \\cos{\\left(u \\right)}",
+          "claim": {
+            "type": "derivative",
+            "f": "sin(u)",
+            "expr": "cos(u)",
+            "var": "u"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 3,
+          "text": "Differentiate the inner function.",
+          "latex": "\\frac{du}{dx} = 6 x",
+          "claim": {
+            "type": "derivative",
+            "f": "3*x**2",
+            "expr": "6*x"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 4,
+          "text": "Put it together.",
+          "latex": "f'(x) = \\cos{\\left(3 x^{2} \\right)}",
+          "claim": {
+            "type": "derivative",
+            "f": "sin(3*x**2)",
+            "expr": "cos(3*x**2)"
+          },
+          "verdict": "invalid"
+        }
+      ],
+      "first_incorrect_step": 4,
+      "is_fully_correct": false,
+      "mistake_label": "forgot_inner_derivative",
+      "corrected_step": {
+        "text": "Combined derivative",
+        "latex": "f'(x) = 6 x \\cos{\\left(3 x^{2} \\right)}",
+        "claim": {
+          "type": "derivative",
+          "f": "sin(3*x**2)",
+          "expr": "6*x*cos(3*x**2)"
+        },
+        "step": 4
+      },
+      "fix_options": [
+        {
+          "id": "f1",
+          "text": "Combined derivative",
+          "latex": "f'(x) = 6 x \\cos{\\left(3 x^{2} \\right)}",
+          "claim": {
+            "type": "derivative",
+            "f": "sin(3*x**2)",
+            "expr": "6*x*cos(3*x**2)"
+          }
+        },
+        {
+          "id": "f2",
+          "text": "Combined derivative",
+          "latex": "f'(x) = 12 x \\cos{\\left(3 x^{2} \\right)}",
+          "claim": {
+            "type": "derivative",
+            "f": "sin(3*x**2)",
+            "expr": "12*x*cos(3*x**2)"
+          }
+        },
+        {
+          "id": "f3",
+          "text": "Combined derivative",
+          "latex": "f'(x) = \\cos{\\left(3 x^{2} \\right)}",
+          "claim": {
+            "type": "derivative",
+            "f": "sin(3*x**2)",
+            "expr": "cos(3*x**2)"
+          }
+        },
+        {
+          "id": "f4",
+          "text": "Combined derivative",
+          "latex": "f'(x) = 6 x",
+          "claim": {
+            "type": "derivative",
+            "f": "sin(3*x**2)",
+            "expr": "6*x"
+          }
+        }
+      ],
+      "correct_fix": "f1",
+      "why_options": [
+        {
+          "id": "algebra_error",
+          "label": "Algebraic simplification or factoring error"
+        },
+        {
+          "id": "power_rule_error",
+          "label": "Power rule applied incorrectly to a negative exponent"
+        },
+        {
+          "id": "forgot_inner_derivative",
+          "label": "Forgot to multiply by the inner function's derivative"
+        },
+        {
+          "id": "wrong_derivative",
+          "label": "Incorrect derivative"
+        }
+      ],
+      "correct_why": "forgot_inner_derivative",
+      "correct_solution": [
+        {
+          "text": "Identify the outer and inner functions.",
+          "latex": "\\text{outer: } \\sin u,\\quad u = 3x^{2}"
+        },
+        {
+          "text": "Differentiate the outer function with respect to u.",
+          "latex": "\\frac{d}{du}\\left(\\sin u\\right) = \\cos{\\left(u \\right)}"
+        },
+        {
+          "text": "Differentiate the inner function.",
+          "latex": "\\frac{du}{dx} = 6 x"
+        },
+        {
+          "text": "Chain rule: outer derivative (evaluated at the inner function) times inner derivative.",
+          "latex": "f'(x) = \\cos{\\left(3 x^{2} \\right)}\\cdot (6 x) = 6 x \\cos{\\left(3 x^{2} \\right)}"
+        }
+      ],
+      "verified_answer": {
+        "latex": "f'(x) = 6 x \\cos{\\left(3 x^{2} \\right)}",
+        "claim": {
+          "type": "derivative",
+          "f": "sin(3*x**2)",
+          "expr": "6*x*cos(3*x**2)"
+        }
+      },
+      "key_lesson": "Chain rule: differentiate the outside, keep the inside, then multiply by the derivative of the inside.",
+      "hint_ladder": [
+        "Steps 1–3 compute two separate derivatives. Does step 4 use both of them?",
+        "What is the derivative of the inner function u = 3x^2?",
+        "Write f'(x) = (outer derivative at u) × (du/dx) and compare it with step 4."
+      ],
+      "source_provenance": {
+        "method": "template",
+        "description": "Hand-authored misconception template over SymPy-computed mathematics. Not LLM output.",
+        "llm": null
+      },
+      "verification_status": {
+        "status": "verified",
+        "checker": "sympy 1.14.0",
+        "claims_checked": 13,
+        "step_verdicts": [
+          "outer∘inner = sin(3*x**2)",
+          "d/du of sin(u) is cos(u)",
+          "d/dx of 3*x**2 is 6*x",
+          "d/dx of sin(3*x**2) is 6*x*cos(3*x**2)"
+        ]
+      },
+      "pack_version": "1.0.0"
+    },
+    {
+      "id": "chn-04",
+      "topic": "chain-rule",
+      "difficulty": 2,
+      "problem_statement": {
+        "text": "Differentiate the function.",
+        "latex": "f(x) = e^{x^{2} + 1}"
+      },
+      "steps": [
+        {
+          "n": 1,
+          "text": "Identify the outer and inner functions.",
+          "latex": "\\text{outer: } e^{u},\\quad u = x^{2} + 1",
+          "claim": {
+            "type": "composition",
+            "outer": "exp(u)",
+            "inner": "x**2 + 1",
+            "f": "exp(x**2 + 1)"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 2,
+          "text": "Differentiate the outer function with respect to u.",
+          "latex": "\\frac{d}{du}\\left(e^{u}\\right) = e^{u}",
+          "claim": {
+            "type": "derivative",
+            "f": "exp(u)",
+            "expr": "exp(u)",
+            "var": "u"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 3,
+          "text": "Differentiate the inner function.",
+          "latex": "\\frac{du}{dx} = x",
+          "claim": {
+            "type": "derivative",
+            "f": "x**2 + 1",
+            "expr": "x"
+          },
+          "verdict": "invalid"
+        },
+        {
+          "n": 4,
+          "text": "Put it together.",
+          "latex": "f'(x) = x e^{x^{2} + 1}",
+          "claim": {
+            "type": "derivative",
+            "f": "exp(x**2 + 1)",
+            "expr": "x*exp(x**2 + 1)"
+          },
+          "verdict": "invalid"
+        }
+      ],
+      "first_incorrect_step": 3,
+      "is_fully_correct": false,
+      "mistake_label": "wrong_derivative",
+      "corrected_step": {
+        "text": "Inner derivative",
+        "latex": "\\frac{du}{dx} = 2 x",
+        "claim": {
+          "type": "derivative",
+          "f": "x**2 + 1",
+          "expr": "2*x"
+        },
+        "step": 3
+      },
+      "fix_options": [
+        {
+          "id": "f1",
+          "text": "Inner derivative",
+          "latex": "\\frac{du}{dx} = x^{2} + 1",
+          "claim": {
+            "type": "derivative",
+            "f": "x**2 + 1",
+            "expr": "x**2 + 1"
+          }
+        },
+        {
+          "id": "f2",
+          "text": "Inner derivative",
+          "latex": "\\frac{du}{dx} = 2 x",
+          "claim": {
+            "type": "derivative",
+            "f": "x**2 + 1",
+            "expr": "2*x"
+          }
+        },
+        {
+          "id": "f3",
+          "text": "Inner derivative",
+          "latex": "\\frac{du}{dx} = 2 x + 1",
+          "claim": {
+            "type": "derivative",
+            "f": "x**2 + 1",
+            "expr": "2*x + 1"
+          }
+        },
+        {
+          "id": "f4",
+          "text": "Inner derivative",
+          "latex": "\\frac{du}{dx} = x",
+          "claim": {
+            "type": "derivative",
+            "f": "x**2 + 1",
+            "expr": "x"
+          }
+        }
+      ],
+      "correct_fix": "f2",
+      "why_options": [
+        {
+          "id": "power_rule_error",
+          "label": "Power rule applied incorrectly to a negative exponent"
+        },
+        {
+          "id": "algebra_error",
+          "label": "Algebraic simplification or factoring error"
+        },
+        {
+          "id": "forgot_inner_derivative",
+          "label": "Forgot to multiply by the inner function's derivative"
+        },
+        {
+          "id": "wrong_derivative",
+          "label": "Incorrect derivative"
+        }
+      ],
+      "correct_why": "wrong_derivative",
+      "correct_solution": [
+        {
+          "text": "Identify the outer and inner functions.",
+          "latex": "\\text{outer: } e^{u},\\quad u = x^{2} + 1"
+        },
+        {
+          "text": "Differentiate the outer function with respect to u.",
+          "latex": "\\frac{d}{du}\\left(e^{u}\\right) = e^{u}"
+        },
+        {
+          "text": "Differentiate the inner function.",
+          "latex": "\\frac{du}{dx} = 2 x"
+        },
+        {
+          "text": "Chain rule: outer derivative (evaluated at the inner function) times inner derivative.",
+          "latex": "f'(x) = e^{x^{2} + 1}\\cdot (2 x) = 2 e x e^{x^{2}}"
+        }
+      ],
+      "verified_answer": {
+        "latex": "f'(x) = 2 e x e^{x^{2}}",
+        "claim": {
+          "type": "derivative",
+          "f": "exp(x**2 + 1)",
+          "expr": "2*x*exp(x**2 + 1)"
+        }
+      },
+      "key_lesson": "Chain rule: differentiate the outside, keep the inside, then multiply by the derivative of the inside.",
+      "hint_ladder": [
+        "Steps 1–3 compute two separate derivatives. Does step 4 use both of them?",
+        "What is the derivative of the inner function u = x^2 + 1?",
+        "Write f'(x) = (outer derivative at u) × (du/dx) and compare it with step 4."
+      ],
+      "source_provenance": {
+        "method": "template",
+        "description": "Hand-authored misconception template over SymPy-computed mathematics. Not LLM output.",
+        "llm": null
+      },
+      "verification_status": {
+        "status": "verified",
+        "checker": "sympy 1.14.0",
+        "claims_checked": 13,
+        "step_verdicts": [
+          "outer∘inner = exp(x**2 + 1)",
+          "d/du of exp(u) is exp(u)",
+          "d/dx of x**2 + 1 is 2*x",
+          "d/dx of exp(x**2 + 1) is 2*x*exp(x**2 + 1)"
+        ]
+      },
+      "pack_version": "1.0.0"
+    },
+    {
+      "id": "chn-05",
+      "topic": "chain-rule",
+      "difficulty": 2,
+      "problem_statement": {
+        "text": "Differentiate the function.",
+        "latex": "f(x) = \\left(x^{2} - 4 x\\right)^{3}"
+      },
+      "steps": [
+        {
+          "n": 1,
+          "text": "Identify the outer and inner functions.",
+          "latex": "\\text{outer: } u^{3},\\quad u = x^{2} - 4x",
+          "claim": {
+            "type": "composition",
+            "outer": "u**3",
+            "inner": "x**2 - 4*x",
+            "f": "(x**2 - 4*x)**3"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 2,
+          "text": "Differentiate the outer function with respect to u.",
+          "latex": "\\frac{d}{du}\\left(u^{3}\\right) = 3 u^{2}",
+          "claim": {
+            "type": "derivative",
+            "f": "u**3",
+            "expr": "3*u**2",
+            "var": "u"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 3,
+          "text": "Differentiate the inner function.",
+          "latex": "\\frac{du}{dx} = 2 x - 4",
+          "claim": {
+            "type": "derivative",
+            "f": "x**2 - 4*x",
+            "expr": "2*x - 4"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 4,
+          "text": "Put it together.",
+          "latex": "f'(x) = 3 \\left(2 x - 4\\right) \\left(x^{2} - 4 x\\right)^{2}",
+          "claim": {
+            "type": "derivative",
+            "f": "(x**2 - 4*x)**3",
+            "expr": "3*(2*x - 4)*(x**2 - 4*x)**2"
+          },
+          "verdict": "valid"
+        }
+      ],
+      "first_incorrect_step": null,
+      "is_fully_correct": true,
+      "mistake_label": null,
+      "corrected_step": null,
+      "fix_options": [],
+      "correct_fix": null,
+      "why_options": [],
+      "correct_why": null,
+      "correct_solution": [
+        {
+          "text": "Identify the outer and inner functions.",
+          "latex": "\\text{outer: } u^{3},\\quad u = x^{2} - 4x"
+        },
+        {
+          "text": "Differentiate the outer function with respect to u.",
+          "latex": "\\frac{d}{du}\\left(u^{3}\\right) = 3 u^{2}"
+        },
+        {
+          "text": "Differentiate the inner function.",
+          "latex": "\\frac{du}{dx} = 2 x - 4"
+        },
+        {
+          "text": "Chain rule: outer derivative (evaluated at the inner function) times inner derivative.",
+          "latex": "f'(x) = 3 \\left(x^{2} - 4 x\\right)^{2}\\cdot (2 x - 4) = 6 x^{2} \\left(x - 4\\right)^{2} \\left(x - 2\\right)"
+        }
+      ],
+      "verified_answer": {
+        "latex": "f'(x) = 6 x^{2} \\left(x - 4\\right)^{2} \\left(x - 2\\right)",
+        "claim": {
+          "type": "derivative",
+          "f": "(x**2 - 4*x)**3",
+          "expr": "(6*x - 12)*(x**2 - 4*x)**2"
+        }
+      },
+      "key_lesson": "Chain rule: differentiate the outside, keep the inside, then multiply by the derivative of the inside.",
+      "hint_ladder": [
+        "Steps 1–3 compute two separate derivatives. Does step 4 use both of them?",
+        "What is the derivative of the inner function u = x^2 - 4x?",
+        "Write f'(x) = (outer derivative at u) × (du/dx) and compare it with step 4."
+      ],
+      "source_provenance": {
+        "method": "template",
+        "description": "Hand-authored misconception template over SymPy-computed mathematics. Not LLM output.",
+        "llm": null
+      },
+      "verification_status": {
+        "status": "verified",
+        "checker": "sympy 1.14.0",
+        "claims_checked": 9,
+        "step_verdicts": [
+          "outer∘inner = (x**2 - 4*x)**3",
+          "d/du of u**3 is 3*u**2",
+          "d/dx of x**2 - 4*x is 2*x - 4",
+          "d/dx of (x**2 - 4*x)**3 is 6*x**2*(x - 4)**2*(x - 2)"
+        ]
+      },
+      "pack_version": "1.0.0"
+    },
+    {
+      "id": "crt-01",
+      "topic": "critical-points",
+      "difficulty": 2,
+      "problem_statement": {
+        "text": "Find the critical points of f and classify each one.",
+        "latex": "f(x) = x^{3} - 6x^{2} + 9x"
+      },
+      "steps": [
+        {
+          "n": 1,
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 12 x + 9",
+          "claim": {
+            "type": "derivative",
+            "f": "x**3 - 6*x**2 + 9*x",
+            "expr": "3*x**2 - 12*x + 9"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 2,
+          "text": "Find the critical points by solving f(x) = 0.",
+          "latex": "x \\left(x - 3\\right)^{2} = 0 \\;\\Rightarrow\\; x = 0,\\; x = 3",
+          "claim": {
+            "type": "critical_points",
+            "f": "x**3 - 6*x**2 + 9*x",
+            "points": [
+              "0",
+              "3"
+            ]
+          },
+          "verdict": "invalid"
+        },
+        {
+          "n": 3,
+          "text": "Evaluate f at those points.",
+          "latex": "f(0) = 0,\\; f(3) = 0",
+          "claim": {
+            "type": "evaluations",
+            "f": "x**3 - 6*x**2 + 9*x",
+            "pairs": [
+              [
+                "0",
+                "0"
+              ],
+              [
+                "3",
+                "0"
+              ]
+            ]
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 4,
+          "text": "Classify with the second derivative.",
+          "latex": "f''(x) = 6 \\left(x - 2\\right):\\quad \\text{local max at } x=0;\\; \\text{local min at } x=3",
+          "claim": {
+            "type": "local_extrema",
+            "f": "x**3 - 6*x**2 + 9*x",
+            "max": [
+              "0"
+            ],
+            "min": [
+              "3"
+            ]
+          },
+          "verdict": "invalid"
+        }
+      ],
+      "first_incorrect_step": 2,
+      "is_fully_correct": false,
+      "mistake_label": "solved_f_not_fprime",
+      "corrected_step": {
+        "text": "Critical points",
+        "latex": "x = 1,\\; x = 3",
+        "claim": {
+          "type": "critical_points",
+          "f": "x**3 - 6*x**2 + 9*x",
+          "points": [
+            "1",
+            "3"
+          ]
+        },
+        "step": 2
+      },
+      "fix_options": [
+        {
+          "id": "f1",
+          "text": "Critical points",
+          "latex": "x = 0,\\; x = 3",
+          "claim": {
+            "type": "critical_points",
+            "f": "x**3 - 6*x**2 + 9*x",
+            "points": [
+              "0",
+              "3"
+            ]
+          }
+        },
+        {
+          "id": "f2",
+          "text": "Critical points",
+          "latex": "x = -1,\\; x = -3",
+          "claim": {
+            "type": "critical_points",
+            "f": "x**3 - 6*x**2 + 9*x",
+            "points": [
+              "-1",
+              "-3"
+            ]
+          }
+        },
+        {
+          "id": "f3",
+          "text": "Critical points",
+          "latex": "x = 1",
+          "claim": {
+            "type": "critical_points",
+            "f": "x**3 - 6*x**2 + 9*x",
+            "points": [
+              "1"
+            ]
+          }
+        },
+        {
+          "id": "f4",
+          "text": "Critical points",
+          "latex": "x = 1,\\; x = 3",
+          "claim": {
+            "type": "critical_points",
+            "f": "x**3 - 6*x**2 + 9*x",
+            "points": [
+              "1",
+              "3"
+            ]
+          }
+        }
+      ],
+      "correct_fix": "f4",
+      "why_options": [
+        {
+          "id": "wrong_derivative",
+          "label": "Incorrect derivative"
+        },
+        {
+          "id": "misclassified_extrema",
+          "label": "Mixed up local maximum and local minimum"
+        },
+        {
+          "id": "algebra_error",
+          "label": "Algebraic simplification or factoring error"
+        },
+        {
+          "id": "solved_f_not_fprime",
+          "label": "Solved f(x) = 0 instead of f′(x) = 0"
+        }
+      ],
+      "correct_why": "solved_f_not_fprime",
+      "correct_solution": [
+        {
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 12 x + 9"
+        },
+        {
+          "text": "Set f′(x) = 0 (not f(x) = 0) and factor.",
+          "latex": "3 x^{2} - 12 x + 9 = 3(x - 1)(x - 3) = 0"
+        },
+        {
+          "text": "Critical points",
+          "latex": "x = 1,\\; x = 3"
+        },
+        {
+          "text": "Second-derivative test",
+          "latex": "\\text{local max at } x=1;\\; \\text{local min at } x=3"
+        }
+      ],
+      "verified_answer": {
+        "latex": "x = 1,\\; x = 3",
+        "claim": {
+          "type": "critical_points",
+          "f": "x**3 - 6*x**2 + 9*x",
+          "points": [
+            "1",
+            "3"
+          ]
+        }
+      },
+      "key_lesson": "Critical points come from f′(x) = 0. Roots of f(x) are a different question, even when they happen to overlap.",
+      "hint_ladder": [
+        "Critical points are where the derivative is zero. Which equation should be solved?",
+        "Check each step against that equation. Expand any factorisation to see if it matches.",
+        "If f″ at a point is negative, is the graph concave up or concave down there?"
+      ],
+      "source_provenance": {
+        "method": "template",
+        "description": "Hand-authored misconception template over SymPy-computed mathematics. Not LLM output.",
+        "llm": null
+      },
+      "verification_status": {
+        "status": "verified",
+        "checker": "sympy 1.14.0",
+        "claims_checked": 13,
+        "step_verdicts": [
+          "d/dx of x**3 - 6*x**2 + 9*x is 3*x**2 - 12*x + 9",
+          "true critical points: [1, 3]",
+          "all evaluations exact",
+          "local max [1], local min [3]"
+        ]
+      },
+      "pack_version": "1.0.0"
+    },
+    {
+      "id": "crt-02",
+      "topic": "critical-points",
+      "difficulty": 2,
+      "problem_statement": {
+        "text": "Find the critical points of f and classify each one.",
+        "latex": "f(x) = x^{3} - 6x^{2} + 9x + 2"
+      },
+      "steps": [
+        {
+          "n": 1,
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 12 x + 9",
+          "claim": {
+            "type": "derivative",
+            "f": "x**3 - 6*x**2 + 9*x + 2",
+            "expr": "3*x**2 - 12*x + 9"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 2,
+          "text": "Set f′(x) = 0 and factor.",
+          "latex": "3 x^{2} - 12 x + 9 = \\left(x + 3\\right) \\left(3 x - 3\\right) = 0",
+          "claim": {
+            "type": "equivalent",
+            "expr": "(x + 3)*(3*x - 3)",
+            "to": "3*x**2 - 12*x + 9"
+          },
+          "verdict": "invalid"
+        },
+        {
+          "n": 3,
+          "text": "So the critical points are",
+          "latex": "x = -3,\\; x = 1",
+          "claim": {
+            "type": "critical_points",
+            "f": "x**3 - 6*x**2 + 9*x + 2",
+            "points": [
+              "-3",
+              "1"
+            ]
+          },
+          "verdict": "invalid"
+        },
+        {
+          "n": 4,
+          "text": "Classify with the second derivative.",
+          "latex": "f''(x) = 6 \\left(x - 2\\right):\\quad \\text{local max at } x=-3, x=1",
+          "claim": {
+            "type": "local_extrema",
+            "f": "x**3 - 6*x**2 + 9*x + 2",
+            "max": [
+              "-3",
+              "1"
+            ],
+            "min": []
+          },
+          "verdict": "invalid"
+        }
+      ],
+      "first_incorrect_step": 2,
+      "is_fully_correct": false,
+      "mistake_label": "algebra_error",
+      "corrected_step": {
+        "text": "Factored derivative",
+        "latex": "f'(x) = \\left(x - 3\\right) \\left(3 x - 3\\right)",
+        "claim": {
+          "type": "equivalent",
+          "expr": "(x - 3)*(3*x - 3)",
+          "to": "3*x**2 - 12*x + 9"
+        },
+        "step": 2
+      },
+      "fix_options": [
+        {
+          "id": "f1",
+          "text": "Factored derivative",
+          "latex": "f'(x) = \\left(x + 3\\right) \\left(3 x - 3\\right)",
+          "claim": {
+            "type": "equivalent",
+            "expr": "(x + 3)*(3*x - 3)",
+            "to": "3*x**2 - 12*x + 9"
+          }
+        },
+        {
+          "id": "f2",
+          "text": "Factored derivative",
+          "latex": "f'(x) = \\left(x - 3\\right) \\left(3 x - 3\\right)",
+          "claim": {
+            "type": "equivalent",
+            "expr": "(x - 3)*(3*x - 3)",
+            "to": "3*x**2 - 12*x + 9"
+          }
+        },
+        {
+          "id": "f3",
+          "text": "Factored derivative",
+          "latex": "f'(x) = \\left(x - 3\\right) \\left(3 x + 3\\right)",
+          "claim": {
+            "type": "equivalent",
+            "expr": "(x - 3)*(3*x + 3)",
+            "to": "3*x**2 - 12*x + 9"
+          }
+        },
+        {
+          "id": "f4",
+          "text": "Factored derivative",
+          "latex": "f'(x) = \\left(x - 3\\right) \\left(x - 1\\right)",
+          "claim": {
+            "type": "equivalent",
+            "expr": "(x - 3)*(x - 1)",
+            "to": "3*x**2 - 12*x + 9"
+          }
+        }
+      ],
+      "correct_fix": "f2",
+      "why_options": [
+        {
+          "id": "solved_f_not_fprime",
+          "label": "Solved f(x) = 0 instead of f′(x) = 0"
+        },
+        {
+          "id": "misclassified_extrema",
+          "label": "Mixed up local maximum and local minimum"
+        },
+        {
+          "id": "algebra_error",
+          "label": "Algebraic simplification or factoring error"
+        },
+        {
+          "id": "wrong_derivative",
+          "label": "Incorrect derivative"
+        }
+      ],
+      "correct_why": "algebra_error",
+      "correct_solution": [
+        {
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 12 x + 9"
+        },
+        {
+          "text": "Set f′(x) = 0 (not f(x) = 0) and factor.",
+          "latex": "3 x^{2} - 12 x + 9 = 3(x - 1)(x - 3) = 0"
+        },
+        {
+          "text": "Critical points",
+          "latex": "x = 1,\\; x = 3"
+        },
+        {
+          "text": "Second-derivative test",
+          "latex": "\\text{local max at } x=1;\\; \\text{local min at } x=3"
+        }
+      ],
+      "verified_answer": {
+        "latex": "x = 1,\\; x = 3",
+        "claim": {
+          "type": "critical_points",
+          "f": "x**3 - 6*x**2 + 9*x + 2",
+          "points": [
+            "1",
+            "3"
+          ]
+        }
+      },
+      "key_lesson": "Expand your factorisation back out to check it before reading off the roots.",
+      "hint_ladder": [
+        "Critical points are where the derivative is zero. Which equation should be solved?",
+        "Check each step against that equation. Expand any factorisation to see if it matches.",
+        "If f″ at a point is negative, is the graph concave up or concave down there?"
+      ],
+      "source_provenance": {
+        "method": "template",
+        "description": "Hand-authored misconception template over SymPy-computed mathematics. Not LLM output.",
+        "llm": null
+      },
+      "verification_status": {
+        "status": "verified",
+        "checker": "sympy 1.14.0",
+        "claims_checked": 13,
+        "step_verdicts": [
+          "d/dx of x**3 - 6*x**2 + 9*x + 2 is 3*x**2 - 12*x + 9",
+          "(x + 3)*(3*x - 3) vs 3*x**2 - 12*x + 9",
+          "true critical points: [1, 3]",
+          "local max [1], local min [3]"
+        ]
+      },
+      "pack_version": "1.0.0"
+    },
+    {
+      "id": "crt-03",
+      "topic": "critical-points",
+      "difficulty": 2,
+      "problem_statement": {
+        "text": "Find the critical points of f and classify each one.",
+        "latex": "f(x) = 2x^{3} - 3x^{2} - 12x"
+      },
+      "steps": [
+        {
+          "n": 1,
+          "text": "Differentiate.",
+          "latex": "f'(x) = 6 x^{2} - 6 x - 12",
+          "claim": {
+            "type": "derivative",
+            "f": "2*x**3 - 3*x**2 - 12*x",
+            "expr": "6*x**2 - 6*x - 12"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 2,
+          "text": "Set f′(x) = 0 and factor.",
+          "latex": "6 x^{2} - 6 x - 12 = 6(x + 1)(x - 2) = 0",
+          "claim": {
+            "type": "equivalent",
+            "expr": "6*(x + 1)*(x - 2)",
+            "to": "6*x**2 - 6*x - 12"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 3,
+          "text": "So the critical points are",
+          "latex": "x = -1,\\; x = 2",
+          "claim": {
+            "type": "critical_points",
+            "f": "2*x**3 - 3*x**2 - 12*x",
+            "points": [
+              "-1",
+              "2"
+            ]
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 4,
+          "text": "Classify with the second derivative.",
+          "latex": "f''(x) = 6 \\left(2 x - 1\\right):\\quad \\text{local max at } x=2;\\; \\text{local min at } x=-1",
+          "claim": {
+            "type": "local_extrema",
+            "f": "2*x**3 - 3*x**2 - 12*x",
+            "max": [
+              "2"
+            ],
+            "min": [
+              "-1"
+            ]
+          },
+          "verdict": "invalid"
+        }
+      ],
+      "first_incorrect_step": 4,
+      "is_fully_correct": false,
+      "mistake_label": "misclassified_extrema",
+      "corrected_step": {
+        "text": "Classification",
+        "latex": "\\text{local max at } x=-1;\\; \\text{local min at } x=2",
+        "claim": {
+          "type": "local_extrema",
+          "f": "2*x**3 - 3*x**2 - 12*x",
+          "max": [
+            "-1"
+          ],
+          "min": [
+            "2"
+          ]
+        },
+        "step": 4
+      },
+      "fix_options": [
+        {
+          "id": "f1",
+          "text": "Classification",
+          "latex": "\\text{local max at } x=2;\\; \\text{local min at } x=-1",
+          "claim": {
+            "type": "local_extrema",
+            "f": "2*x**3 - 3*x**2 - 12*x",
+            "max": [
+              "2"
+            ],
+            "min": [
+              "-1"
+            ]
+          }
+        },
+        {
+          "id": "f2",
+          "text": "Classification",
+          "latex": "\\text{local max at } x=-1;\\; \\text{local min at } x=2",
+          "claim": {
+            "type": "local_extrema",
+            "f": "2*x**3 - 3*x**2 - 12*x",
+            "max": [
+              "-1"
+            ],
+            "min": [
+              "2"
+            ]
+          }
+        },
+        {
+          "id": "f3",
+          "text": "Classification",
+          "latex": "\\text{local min at } x=-1, x=2",
+          "claim": {
+            "type": "local_extrema",
+            "f": "2*x**3 - 3*x**2 - 12*x",
+            "max": [],
+            "min": [
+              "-1",
+              "2"
+            ]
+          }
+        },
+        {
+          "id": "f4",
+          "text": "Classification",
+          "latex": "\\text{local max at } x=-1, x=2",
+          "claim": {
+            "type": "local_extrema",
+            "f": "2*x**3 - 3*x**2 - 12*x",
+            "max": [
+              "-1",
+              "2"
+            ],
+            "min": []
+          }
+        }
+      ],
+      "correct_fix": "f2",
+      "why_options": [
+        {
+          "id": "algebra_error",
+          "label": "Algebraic simplification or factoring error"
+        },
+        {
+          "id": "wrong_derivative",
+          "label": "Incorrect derivative"
+        },
+        {
+          "id": "solved_f_not_fprime",
+          "label": "Solved f(x) = 0 instead of f′(x) = 0"
+        },
+        {
+          "id": "misclassified_extrema",
+          "label": "Mixed up local maximum and local minimum"
+        }
+      ],
+      "correct_why": "misclassified_extrema",
+      "correct_solution": [
+        {
+          "text": "Differentiate.",
+          "latex": "f'(x) = 6 x^{2} - 6 x - 12"
+        },
+        {
+          "text": "Set f′(x) = 0 (not f(x) = 0) and factor.",
+          "latex": "6 x^{2} - 6 x - 12 = 6(x + 1)(x - 2) = 0"
+        },
+        {
+          "text": "Critical points",
+          "latex": "x = -1,\\; x = 2"
+        },
+        {
+          "text": "Second-derivative test",
+          "latex": "\\text{local max at } x=-1;\\; \\text{local min at } x=2"
+        }
+      ],
+      "verified_answer": {
+        "latex": "x = -1,\\; x = 2",
+        "claim": {
+          "type": "critical_points",
+          "f": "2*x**3 - 3*x**2 - 12*x",
+          "points": [
+            "-1",
+            "2"
+          ]
+        }
+      },
+      "key_lesson": "f″ < 0 means concave down, which is a local maximum; f″ > 0 means a local minimum.",
+      "hint_ladder": [
+        "Critical points are where the derivative is zero. Which equation should be solved?",
+        "Check each step against that equation. Expand any factorisation to see if it matches.",
+        "If f″ at a point is negative, is the graph concave up or concave down there?"
+      ],
+      "source_provenance": {
+        "method": "template",
+        "description": "Hand-authored misconception template over SymPy-computed mathematics. Not LLM output.",
+        "llm": null
+      },
+      "verification_status": {
+        "status": "verified",
+        "checker": "sympy 1.14.0",
+        "claims_checked": 13,
+        "step_verdicts": [
+          "d/dx of 2*x**3 - 3*x**2 - 12*x is 6*x**2 - 6*x - 12",
+          "6*(x + 1)*(x - 2) vs 6*x**2 - 6*x - 12",
+          "true critical points: [-1, 2]",
+          "local max [-1], local min [2]"
+        ]
+      },
+      "pack_version": "1.0.0"
+    },
+    {
+      "id": "crt-04",
+      "topic": "critical-points",
+      "difficulty": 2,
+      "problem_statement": {
+        "text": "Find the critical points of f and classify each one.",
+        "latex": "f(x) = x^{3} - 12x + 1"
+      },
+      "steps": [
+        {
+          "n": 1,
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 12",
+          "claim": {
+            "type": "derivative",
+            "f": "x**3 - 12*x + 1",
+            "expr": "3*x**2 - 12"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 2,
+          "text": "Set f′(x) = 0 and factor.",
+          "latex": "3 x^{2} - 12 = 3(x - 2)(x + 2) = 0",
+          "claim": {
+            "type": "equivalent",
+            "expr": "3*(x - 2)*(x + 2)",
+            "to": "3*x**2 - 12"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 3,
+          "text": "So the critical points are",
+          "latex": "x = -2,\\; x = 2",
+          "claim": {
+            "type": "critical_points",
+            "f": "x**3 - 12*x + 1",
+            "points": [
+              "-2",
+              "2"
+            ]
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 4,
+          "text": "Classify with the second derivative.",
+          "latex": "f''(x) = 6 x:\\quad \\text{local max at } x=-2;\\; \\text{local min at } x=2",
+          "claim": {
+            "type": "local_extrema",
+            "f": "x**3 - 12*x + 1",
+            "max": [
+              "-2"
+            ],
+            "min": [
+              "2"
+            ]
+          },
+          "verdict": "valid"
+        }
+      ],
+      "first_incorrect_step": null,
+      "is_fully_correct": true,
+      "mistake_label": null,
+      "corrected_step": null,
+      "fix_options": [],
+      "correct_fix": null,
+      "why_options": [],
+      "correct_why": null,
+      "correct_solution": [
+        {
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 12"
+        },
+        {
+          "text": "Set f′(x) = 0 (not f(x) = 0) and factor.",
+          "latex": "3 x^{2} - 12 = 3(x - 2)(x + 2) = 0"
+        },
+        {
+          "text": "Critical points",
+          "latex": "x = -2,\\; x = 2"
+        },
+        {
+          "text": "Second-derivative test",
+          "latex": "\\text{local max at } x=-2;\\; \\text{local min at } x=2"
+        }
+      ],
+      "verified_answer": {
+        "latex": "x = -2,\\; x = 2",
+        "claim": {
+          "type": "critical_points",
+          "f": "x**3 - 12*x + 1",
+          "points": [
+            "-2",
+            "2"
+          ]
+        }
+      },
+      "key_lesson": "Critical points come from f′(x) = 0; the second derivative's sign classifies them.",
+      "hint_ladder": [
+        "Critical points are where the derivative is zero. Which equation should be solved?",
+        "Check each step against that equation. Expand any factorisation to see if it matches.",
+        "If f″ at a point is negative, is the graph concave up or concave down there?"
+      ],
+      "source_provenance": {
+        "method": "template",
+        "description": "Hand-authored misconception template over SymPy-computed mathematics. Not LLM output.",
+        "llm": null
+      },
+      "verification_status": {
+        "status": "verified",
+        "checker": "sympy 1.14.0",
+        "claims_checked": 9,
+        "step_verdicts": [
+          "d/dx of x**3 - 12*x + 1 is 3*x**2 - 12",
+          "3*(x - 2)*(x + 2) vs 3*x**2 - 12",
+          "true critical points: [-2, 2]",
+          "local max [-2], local min [2]"
+        ]
+      },
+      "pack_version": "1.0.0"
+    },
+    {
+      "id": "int-demo-endpoints",
+      "topic": "closed-interval",
+      "difficulty": 2,
+      "problem_statement": {
+        "text": "Find the absolute maximum of f on the interval.",
+        "latex": "f(x) = x^{3} - 6x^{2} + 11x - 6,\\quad x \\in [0,\\,4]"
+      },
+      "steps": [
+        {
+          "n": 1,
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 12 x + 11",
+          "claim": {
+            "type": "derivative",
+            "f": "x**3 - 6*x**2 + 11*x - 6",
+            "expr": "3*x**2 - 12*x + 11"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 2,
+          "text": "Solve f′(x) = 0. Both solutions lie in [0, 4].",
+          "latex": "3 x^{2} - 12 x + 11 = 0 \\;\\Rightarrow\\; x = 2 - \\frac{\\sqrt{3}}{3},\\; x = 2 + \\frac{\\sqrt{3}}{3}",
+          "claim": {
+            "type": "critical_points",
+            "f": "x**3 - 6*x**2 + 11*x - 6",
+            "interval": [
+              "0",
+              "4"
+            ],
+            "points": [
+              "2 - sqrt(3)/3",
+              "sqrt(3)/3 + 2"
+            ]
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 3,
+          "text": "Evaluate f at the critical points.",
+          "latex": "f\\left(2 - \\frac{\\sqrt{3}}{3}\\right) = \\frac{2 \\sqrt{3}}{9} \\approx 0.385,\\; f\\left(2 + \\frac{\\sqrt{3}}{3}\\right) = - \\frac{2 \\sqrt{3}}{9} \\approx -0.385",
+          "claim": {
+            "type": "evaluations",
+            "f": "x**3 - 6*x**2 + 11*x - 6",
+            "pairs": [
+              [
+                "2 - sqrt(3)/3",
+                "2*sqrt(3)/9"
+              ],
+              [
+                "sqrt(3)/3 + 2",
+                "-2*sqrt(3)/9"
+              ]
+            ]
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 4,
+          "text": "The largest value is the absolute maximum.",
+          "latex": "\\text{absolute maximum } = \\frac{2 \\sqrt{3}}{9} \\approx 0.385 \\text{ at } x = 2 - \\frac{\\sqrt{3}}{3}",
+          "claim": {
+            "type": "absolute_extremum",
+            "f": "x**3 - 6*x**2 + 11*x - 6",
+            "interval": [
+              "0",
+              "4"
+            ],
+            "kind": "max",
+            "value": "2*sqrt(3)/9",
+            "at": [
+              "2 - sqrt(3)/3"
+            ]
+          },
+          "verdict": "invalid"
+        }
+      ],
+      "first_incorrect_step": 4,
+      "is_fully_correct": false,
+      "mistake_label": "forgot_endpoints",
+      "corrected_step": {
+        "text": "Also compare the endpoints f(0) = -6 and f(4) = 6.",
+        "latex": "\\text{absolute maximum } = 6 \\text{ at } x = 4",
+        "claim": {
+          "type": "absolute_extremum",
+          "f": "x**3 - 6*x**2 + 11*x - 6",
+          "interval": [
+            "0",
+            "4"
+          ],
+          "kind": "max",
+          "value": "6",
+          "at": [
+            "4"
+          ]
+        },
+        "step": 4
+      },
+      "fix_options": [
+        {
+          "id": "f1",
+          "text": "Also compare the endpoints f(0) = -6 and f(4) = 6.",
+          "latex": "\\text{absolute maximum } = 6 \\text{ at } x = 4",
+          "claim": {
+            "type": "absolute_extremum",
+            "f": "x**3 - 6*x**2 + 11*x - 6",
+            "interval": [
+              "0",
+              "4"
+            ],
+            "kind": "max",
+            "value": "6",
+            "at": [
+              "4"
+            ]
+          }
+        },
+        {
+          "id": "f2",
+          "text": "Keep the critical-point answer.",
+          "latex": "\\text{absolute maximum } = \\frac{2 \\sqrt{3}}{9} \\approx 0.385 \\text{ at } x = 2 - \\frac{\\sqrt{3}}{3}",
+          "claim": {
+            "type": "absolute_extremum",
+            "f": "x**3 - 6*x**2 + 11*x - 6",
+            "interval": [
+              "0",
+              "4"
+            ],
+            "kind": "max",
+            "value": "2*sqrt(3)/9",
+            "at": [
+              "2 - sqrt(3)/3"
+            ]
+          }
+        },
+        {
+          "id": "f3",
+          "text": "Pick the smallest candidate value.",
+          "latex": "\\text{absolute maximum } = -6 \\text{ at } x = 0",
+          "claim": {
+            "type": "absolute_extremum",
+            "f": "x**3 - 6*x**2 + 11*x - 6",
+            "interval": [
+              "0",
+              "4"
+            ],
+            "kind": "max",
+            "value": "-6",
+            "at": [
+              "0"
+            ]
+          }
+        },
+        {
+          "id": "f4",
+          "text": "Endpoint with the extreme value.",
+          "latex": "\\text{absolute maximum } = 6 \\text{ at } x = 0",
+          "claim": {
+            "type": "absolute_extremum",
+            "f": "x**3 - 6*x**2 + 11*x - 6",
+            "interval": [
+              "0",
+              "4"
+            ],
+            "kind": "max",
+            "value": "6",
+            "at": [
+              "0"
+            ]
+          }
+        }
+      ],
+      "correct_fix": "f1",
+      "why_options": [
+        {
+          "id": "forgot_endpoints",
+          "label": "Forgot to evaluate the interval endpoints"
+        },
+        {
+          "id": "bad_evaluation",
+          "label": "Incorrect evaluation of f at a point"
+        },
+        {
+          "id": "local_vs_absolute",
+          "label": "Confused a local extremum with the absolute extremum"
+        },
+        {
+          "id": "solved_f_not_fprime",
+          "label": "Solved f(x) = 0 instead of f′(x) = 0"
+        }
+      ],
+      "correct_why": "forgot_endpoints",
+      "correct_solution": [
+        {
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 12 x + 11"
+        },
+        {
+          "text": "Critical points: solve f′(x) = 0 and keep those inside [0, 4].",
+          "latex": "x = 2 - \\frac{\\sqrt{3}}{3},\\; x = 2 + \\frac{\\sqrt{3}}{3}"
+        },
+        {
+          "text": "Evaluate f at every critical point AND both endpoints.",
+          "latex": "f\\left(0\\right) = -6,\\; f\\left(2 - \\frac{\\sqrt{3}}{3}\\right) = \\frac{2 \\sqrt{3}}{9} \\approx 0.385,\\; f\\left(2 + \\frac{\\sqrt{3}}{3}\\right) = - \\frac{2 \\sqrt{3}}{9} \\approx -0.385,\\; f\\left(4\\right) = 6"
+        },
+        {
+          "text": "Compare all candidate values.",
+          "latex": "\\text{absolute maximum } = 6 \\text{ at } x = 4"
+        }
+      ],
+      "verified_answer": {
+        "latex": "\\text{absolute maximum } = 6 \\text{ at } x = 4",
+        "claim": {
+          "type": "absolute_extremum",
+          "f": "x**3 - 6*x**2 + 11*x - 6",
+          "interval": [
+            "0",
+            "4"
+          ],
+          "kind": "max",
+          "value": "6",
+          "at": [
+            "4"
+          ]
+        }
+      },
+      "key_lesson": "On a closed interval the absolute extremum can sit at an endpoint. Always evaluate f at the endpoints too.",
+      "hint_ladder": [
+        "On a closed interval, which x-values are candidates for the absolute maximum?",
+        "List every candidate: the critical points inside the interval and the two endpoints. Did the attempt check all of them?",
+        "Compute f(0) and f(4) yourself and compare them with the values in step 3."
+      ],
+      "source_provenance": {
+        "method": "template",
+        "description": "Hand-authored misconception template over SymPy-computed mathematics. Not LLM output.",
+        "llm": null
+      },
+      "verification_status": {
+        "status": "verified",
+        "checker": "sympy 1.14.0",
+        "claims_checked": 13,
+        "step_verdicts": [
+          "d/dx of x**3 - 6*x**2 + 11*x - 6 is 3*x**2 - 12*x + 11",
+          "true critical points: [2 - sqrt(3)/3, sqrt(3)/3 + 2]",
+          "all evaluations exact",
+          "absolute max is 6 at [4]"
+        ]
+      },
+      "pack_version": "1.0.0"
+    },
+    {
+      "id": "int-demo-lucky",
+      "topic": "closed-interval",
+      "difficulty": 2,
+      "problem_statement": {
+        "text": "Find the absolute maximum of f on the interval.",
+        "latex": "f(x) = x^{3} - 3x^{2},\\quad x \\in [-1,\\,4]"
+      },
+      "steps": [
+        {
+          "n": 1,
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 6 x",
+          "claim": {
+            "type": "derivative",
+            "f": "x**3 - 3*x**2",
+            "expr": "3*x**2 - 6*x"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 2,
+          "text": "Find the critical points by solving f(x) = 0 on the interval.",
+          "latex": "x^{2} \\left(x - 3\\right) = 0 \\;\\Rightarrow\\; x = 0,\\; x = 3",
+          "claim": {
+            "type": "critical_points",
+            "f": "x**3 - 3*x**2",
+            "interval": [
+              "-1",
+              "4"
+            ],
+            "points": [
+              "0",
+              "3"
+            ]
+          },
+          "verdict": "invalid"
+        },
+        {
+          "n": 3,
+          "text": "Evaluate f at the endpoints and the critical points.",
+          "latex": "f\\left(-1\\right) = -4,\\; f\\left(0\\right) = 0,\\; f\\left(3\\right) = 0,\\; f\\left(4\\right) = 16",
+          "claim": {
+            "type": "evaluations",
+            "f": "x**3 - 3*x**2",
+            "pairs": [
+              [
+                "-1",
+                "-4"
+              ],
+              [
+                "0",
+                "0"
+              ],
+              [
+                "3",
+                "0"
+              ],
+              [
+                "4",
+                "16"
+              ]
+            ]
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 4,
+          "text": "The largest value is the absolute maximum.",
+          "latex": "\\text{absolute maximum } = 16 \\text{ at } x = 4",
+          "claim": {
+            "type": "absolute_extremum",
+            "f": "x**3 - 3*x**2",
+            "interval": [
+              "-1",
+              "4"
+            ],
+            "kind": "max",
+            "value": "16",
+            "at": [
+              "4"
+            ]
+          },
+          "verdict": "valid"
+        }
+      ],
+      "first_incorrect_step": 2,
+      "is_fully_correct": false,
+      "mistake_label": "solved_f_not_fprime",
+      "corrected_step": {
+        "text": "Critical points in the interval",
+        "latex": "x = 0,\\; x = 2",
+        "claim": {
+          "type": "critical_points",
+          "f": "x**3 - 3*x**2",
+          "interval": [
+            "-1",
+            "4"
+          ],
+          "points": [
+            "0",
+            "2"
+          ]
+        },
+        "step": 2
+      },
+      "fix_options": [
+        {
+          "id": "f1",
+          "text": "Critical points in the interval",
+          "latex": "x = 0,\\; x = 3",
+          "claim": {
+            "type": "critical_points",
+            "f": "x**3 - 3*x**2",
+            "interval": [
+              "-1",
+              "4"
+            ],
+            "points": [
+              "0",
+              "3"
+            ]
+          }
+        },
+        {
+          "id": "f2",
+          "text": "Critical points in the interval",
+          "latex": "x = -1,\\; x = 4",
+          "claim": {
+            "type": "critical_points",
+            "f": "x**3 - 3*x**2",
+            "interval": [
+              "-1",
+              "4"
+            ],
+            "points": [
+              "-1",
+              "4"
+            ]
+          }
+        },
+        {
+          "id": "f3",
+          "text": "Critical points in the interval",
+          "latex": "x = 0,\\; x = 2",
+          "claim": {
+            "type": "critical_points",
+            "f": "x**3 - 3*x**2",
+            "interval": [
+              "-1",
+              "4"
+            ],
+            "points": [
+              "0",
+              "2"
+            ]
+          }
+        },
+        {
+          "id": "f4",
+          "text": "Critical points in the interval",
+          "latex": "x = 0,\\; x = 2,\\; x = 3",
+          "claim": {
+            "type": "critical_points",
+            "f": "x**3 - 3*x**2",
+            "interval": [
+              "-1",
+              "4"
+            ],
+            "points": [
+              "0",
+              "2",
+              "3"
+            ]
+          }
+        }
+      ],
+      "correct_fix": "f3",
+      "why_options": [
+        {
+          "id": "bad_evaluation",
+          "label": "Incorrect evaluation of f at a point"
+        },
+        {
+          "id": "solved_f_not_fprime",
+          "label": "Solved f(x) = 0 instead of f′(x) = 0"
+        },
+        {
+          "id": "outside_interval",
+          "label": "Used a critical point outside the interval"
+        },
+        {
+          "id": "local_vs_absolute",
+          "label": "Confused a local extremum with the absolute extremum"
+        }
+      ],
+      "correct_why": "solved_f_not_fprime",
+      "correct_solution": [
+        {
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 6 x"
+        },
+        {
+          "text": "Critical points: solve f′(x) = 0 and keep those inside [-1, 4].",
+          "latex": "x = 0,\\; x = 2"
+        },
+        {
+          "text": "Evaluate f at every critical point AND both endpoints.",
+          "latex": "f\\left(-1\\right) = -4,\\; f\\left(0\\right) = 0,\\; f\\left(2\\right) = -4,\\; f\\left(4\\right) = 16"
+        },
+        {
+          "text": "Compare all candidate values.",
+          "latex": "\\text{absolute maximum } = 16 \\text{ at } x = 4"
+        }
+      ],
+      "verified_answer": {
+        "latex": "\\text{absolute maximum } = 16 \\text{ at } x = 4",
+        "claim": {
+          "type": "absolute_extremum",
+          "f": "x**3 - 3*x**2",
+          "interval": [
+            "-1",
+            "4"
+          ],
+          "kind": "max",
+          "value": "16",
+          "at": [
+            "4"
+          ]
+        }
+      },
+      "key_lesson": "A correct final answer does not prove correct reasoning. Critical points come from f′(x) = 0, not f(x) = 0.",
+      "hint_ladder": [
+        "On a closed interval, which x-values are candidates for the absolute maximum?",
+        "List every candidate: the critical points inside the interval and the two endpoints. Did the attempt check all of them?",
+        "Compute f(-1) and f(4) yourself and compare them with the values in step 3."
+      ],
+      "source_provenance": {
+        "method": "template",
+        "description": "Hand-authored misconception template over SymPy-computed mathematics. Not LLM output.",
+        "llm": null
+      },
+      "verification_status": {
+        "status": "verified",
+        "checker": "sympy 1.14.0",
+        "claims_checked": 13,
+        "step_verdicts": [
+          "d/dx of x**3 - 3*x**2 is 3*x*(x - 2)",
+          "true critical points: [0, 2]",
+          "all evaluations exact",
+          "absolute max is 16 at [4]"
+        ]
+      },
+      "pack_version": "1.0.0"
+    },
+    {
+      "id": "int-03",
+      "topic": "closed-interval",
+      "difficulty": 2,
+      "problem_statement": {
+        "text": "Find the absolute maximum of f on the interval.",
+        "latex": "f(x) = x^{3} - 3x^{2} + 2,\\quad x \\in [-1,\\,4]"
+      },
+      "steps": [
+        {
+          "n": 1,
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 6 x",
+          "claim": {
+            "type": "derivative",
+            "f": "x**3 - 3*x**2 + 2",
+            "expr": "3*x**2 - 6*x"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 2,
+          "text": "Solve f′(x) = 0. Both solutions lie in [-1, 4].",
+          "latex": "3 x^{2} - 6 x = 0 \\;\\Rightarrow\\; x = 0,\\; x = 2",
+          "claim": {
+            "type": "critical_points",
+            "f": "x**3 - 3*x**2 + 2",
+            "interval": [
+              "-1",
+              "4"
+            ],
+            "points": [
+              "0",
+              "2"
+            ]
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 3,
+          "text": "Evaluate f at the critical points.",
+          "latex": "f\\left(0\\right) = 2,\\; f\\left(2\\right) = -2",
+          "claim": {
+            "type": "evaluations",
+            "f": "x**3 - 3*x**2 + 2",
+            "pairs": [
+              [
+                "0",
+                "2"
+              ],
+              [
+                "2",
+                "-2"
+              ]
+            ]
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 4,
+          "text": "The largest value is the absolute maximum.",
+          "latex": "\\text{absolute maximum } = 2 \\text{ at } x = 0",
+          "claim": {
+            "type": "absolute_extremum",
+            "f": "x**3 - 3*x**2 + 2",
+            "interval": [
+              "-1",
+              "4"
+            ],
+            "kind": "max",
+            "value": "2",
+            "at": [
+              "0"
+            ]
+          },
+          "verdict": "invalid"
+        }
+      ],
+      "first_incorrect_step": 4,
+      "is_fully_correct": false,
+      "mistake_label": "forgot_endpoints",
+      "corrected_step": {
+        "text": "Also compare the endpoints f(-1) = -2 and f(4) = 18.",
+        "latex": "\\text{absolute maximum } = 18 \\text{ at } x = 4",
+        "claim": {
+          "type": "absolute_extremum",
+          "f": "x**3 - 3*x**2 + 2",
+          "interval": [
+            "-1",
+            "4"
+          ],
+          "kind": "max",
+          "value": "18",
+          "at": [
+            "4"
+          ]
+        },
+        "step": 4
+      },
+      "fix_options": [
+        {
+          "id": "f1",
+          "text": "Keep the critical-point answer.",
+          "latex": "\\text{absolute maximum } = 2 \\text{ at } x = 0",
+          "claim": {
+            "type": "absolute_extremum",
+            "f": "x**3 - 3*x**2 + 2",
+            "interval": [
+              "-1",
+              "4"
+            ],
+            "kind": "max",
+            "value": "2",
+            "at": [
+              "0"
+            ]
+          }
+        },
+        {
+          "id": "f2",
+          "text": "Pick the smallest candidate value.",
+          "latex": "\\text{absolute maximum } = -2 \\text{ at } x = -1, x = 2",
+          "claim": {
+            "type": "absolute_extremum",
+            "f": "x**3 - 3*x**2 + 2",
+            "interval": [
+              "-1",
+              "4"
+            ],
+            "kind": "max",
+            "value": "-2",
+            "at": [
+              "-1",
+              "2"
+            ]
+          }
+        },
+        {
+          "id": "f3",
+          "text": "Also compare the endpoints f(-1) = -2 and f(4) = 18.",
+          "latex": "\\text{absolute maximum } = 18 \\text{ at } x = 4",
+          "claim": {
+            "type": "absolute_extremum",
+            "f": "x**3 - 3*x**2 + 2",
+            "interval": [
+              "-1",
+              "4"
+            ],
+            "kind": "max",
+            "value": "18",
+            "at": [
+              "4"
+            ]
+          }
+        },
+        {
+          "id": "f4",
+          "text": "Endpoint with the extreme value.",
+          "latex": "\\text{absolute maximum } = 18 \\text{ at } x = -1",
+          "claim": {
+            "type": "absolute_extremum",
+            "f": "x**3 - 3*x**2 + 2",
+            "interval": [
+              "-1",
+              "4"
+            ],
+            "kind": "max",
+            "value": "18",
+            "at": [
+              "-1"
+            ]
+          }
+        }
+      ],
+      "correct_fix": "f3",
+      "why_options": [
+        {
+          "id": "solved_f_not_fprime",
+          "label": "Solved f(x) = 0 instead of f′(x) = 0"
+        },
+        {
+          "id": "local_vs_absolute",
+          "label": "Confused a local extremum with the absolute extremum"
+        },
+        {
+          "id": "bad_evaluation",
+          "label": "Incorrect evaluation of f at a point"
+        },
+        {
+          "id": "forgot_endpoints",
+          "label": "Forgot to evaluate the interval endpoints"
+        }
+      ],
+      "correct_why": "forgot_endpoints",
+      "correct_solution": [
+        {
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 6 x"
+        },
+        {
+          "text": "Critical points: solve f′(x) = 0 and keep those inside [-1, 4].",
+          "latex": "x = 0,\\; x = 2"
+        },
+        {
+          "text": "Evaluate f at every critical point AND both endpoints.",
+          "latex": "f\\left(-1\\right) = -2,\\; f\\left(0\\right) = 2,\\; f\\left(2\\right) = -2,\\; f\\left(4\\right) = 18"
+        },
+        {
+          "text": "Compare all candidate values.",
+          "latex": "\\text{absolute maximum } = 18 \\text{ at } x = 4"
+        }
+      ],
+      "verified_answer": {
+        "latex": "\\text{absolute maximum } = 18 \\text{ at } x = 4",
+        "claim": {
+          "type": "absolute_extremum",
+          "f": "x**3 - 3*x**2 + 2",
+          "interval": [
+            "-1",
+            "4"
+          ],
+          "kind": "max",
+          "value": "18",
+          "at": [
+            "4"
+          ]
+        }
+      },
+      "key_lesson": "On a closed interval the absolute extremum can sit at an endpoint. Always evaluate f at the endpoints too.",
+      "hint_ladder": [
+        "On a closed interval, which x-values are candidates for the absolute maximum?",
+        "List every candidate: the critical points inside the interval and the two endpoints. Did the attempt check all of them?",
+        "Compute f(-1) and f(4) yourself and compare them with the values in step 3."
+      ],
+      "source_provenance": {
+        "method": "template",
+        "description": "Hand-authored misconception template over SymPy-computed mathematics. Not LLM output.",
+        "llm": null
+      },
+      "verification_status": {
+        "status": "verified",
+        "checker": "sympy 1.14.0",
+        "claims_checked": 13,
+        "step_verdicts": [
+          "d/dx of x**3 - 3*x**2 + 2 is 3*x*(x - 2)",
+          "true critical points: [0, 2]",
+          "all evaluations exact",
+          "absolute max is 18 at [4]"
+        ]
+      },
+      "pack_version": "1.0.0"
+    },
+    {
+      "id": "int-04",
+      "topic": "closed-interval",
+      "difficulty": 2,
+      "problem_statement": {
+        "text": "Find the absolute maximum of f on the interval.",
+        "latex": "f(x) = x^{3} - 12x,\\quad x \\in [0,\\,3]"
+      },
+      "steps": [
+        {
+          "n": 1,
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 12",
+          "claim": {
+            "type": "derivative",
+            "f": "x**3 - 12*x",
+            "expr": "3*x**2 - 12"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 2,
+          "text": "Solve f′(x) = 0 to get the critical points in [0, 3].",
+          "latex": "3 x^{2} - 12 = 0 \\;\\Rightarrow\\; x = -2,\\; x = 2",
+          "claim": {
+            "type": "critical_points",
+            "f": "x**3 - 12*x",
+            "interval": [
+              "0",
+              "3"
+            ],
+            "points": [
+              "-2",
+              "2"
+            ]
+          },
+          "verdict": "invalid"
+        },
+        {
+          "n": 3,
+          "text": "Evaluate f at the endpoints and the critical points.",
+          "latex": "f\\left(-2\\right) = 16,\\; f\\left(0\\right) = 0,\\; f\\left(2\\right) = -16,\\; f\\left(3\\right) = -9",
+          "claim": {
+            "type": "evaluations",
+            "f": "x**3 - 12*x",
+            "pairs": [
+              [
+                "-2",
+                "16"
+              ],
+              [
+                "0",
+                "0"
+              ],
+              [
+                "2",
+                "-16"
+              ],
+              [
+                "3",
+                "-9"
+              ]
+            ]
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 4,
+          "text": "The largest value is the absolute maximum.",
+          "latex": "\\text{absolute maximum } = 16 \\text{ at } x = -2",
+          "claim": {
+            "type": "absolute_extremum",
+            "f": "x**3 - 12*x",
+            "interval": [
+              "0",
+              "3"
+            ],
+            "kind": "max",
+            "value": "16",
+            "at": [
+              "-2"
+            ]
+          },
+          "verdict": "invalid"
+        }
+      ],
+      "first_incorrect_step": 2,
+      "is_fully_correct": false,
+      "mistake_label": "outside_interval",
+      "corrected_step": {
+        "text": "Critical points in the interval",
+        "latex": "x = 2",
+        "claim": {
+          "type": "critical_points",
+          "f": "x**3 - 12*x",
+          "interval": [
+            "0",
+            "3"
+          ],
+          "points": [
+            "2"
+          ]
+        },
+        "step": 2
+      },
+      "fix_options": [
+        {
+          "id": "f1",
+          "text": "Critical points in the interval",
+          "latex": "x = 3",
+          "claim": {
+            "type": "critical_points",
+            "f": "x**3 - 12*x",
+            "interval": [
+              "0",
+              "3"
+            ],
+            "points": [
+              "3"
+            ]
+          }
+        },
+        {
+          "id": "f2",
+          "text": "Critical points in the interval",
+          "latex": "x = 0,\\; x = 3",
+          "claim": {
+            "type": "critical_points",
+            "f": "x**3 - 12*x",
+            "interval": [
+              "0",
+              "3"
+            ],
+            "points": [
+              "0",
+              "3"
+            ]
+          }
+        },
+        {
+          "id": "f3",
+          "text": "Critical points in the interval",
+          "latex": "x = -2,\\; x = 2",
+          "claim": {
+            "type": "critical_points",
+            "f": "x**3 - 12*x",
+            "interval": [
+              "0",
+              "3"
+            ],
+            "points": [
+              "-2",
+              "2"
+            ]
+          }
+        },
+        {
+          "id": "f4",
+          "text": "Critical points in the interval",
+          "latex": "x = 2",
+          "claim": {
+            "type": "critical_points",
+            "f": "x**3 - 12*x",
+            "interval": [
+              "0",
+              "3"
+            ],
+            "points": [
+              "2"
+            ]
+          }
+        }
+      ],
+      "correct_fix": "f4",
+      "why_options": [
+        {
+          "id": "solved_f_not_fprime",
+          "label": "Solved f(x) = 0 instead of f′(x) = 0"
+        },
+        {
+          "id": "outside_interval",
+          "label": "Used a critical point outside the interval"
+        },
+        {
+          "id": "bad_evaluation",
+          "label": "Incorrect evaluation of f at a point"
+        },
+        {
+          "id": "local_vs_absolute",
+          "label": "Confused a local extremum with the absolute extremum"
+        }
+      ],
+      "correct_why": "outside_interval",
+      "correct_solution": [
+        {
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 12"
+        },
+        {
+          "text": "Critical points: solve f′(x) = 0 and keep those inside [0, 3].",
+          "latex": "x = 2"
+        },
+        {
+          "text": "Evaluate f at every critical point AND both endpoints.",
+          "latex": "f\\left(0\\right) = 0,\\; f\\left(2\\right) = -16,\\; f\\left(3\\right) = -9"
+        },
+        {
+          "text": "Compare all candidate values.",
+          "latex": "\\text{absolute maximum } = 0 \\text{ at } x = 0"
+        }
+      ],
+      "verified_answer": {
+        "latex": "\\text{absolute maximum } = 0 \\text{ at } x = 0",
+        "claim": {
+          "type": "absolute_extremum",
+          "f": "x**3 - 12*x",
+          "interval": [
+            "0",
+            "3"
+          ],
+          "kind": "max",
+          "value": "0",
+          "at": [
+            "0"
+          ]
+        }
+      },
+      "key_lesson": "Throw away critical points that lie outside the interval before evaluating.",
+      "hint_ladder": [
+        "On a closed interval, which x-values are candidates for the absolute maximum?",
+        "List every candidate: the critical points inside the interval and the two endpoints. Did the attempt check all of them?",
+        "Compute f(0) and f(3) yourself and compare them with the values in step 3."
+      ],
+      "source_provenance": {
+        "method": "template",
+        "description": "Hand-authored misconception template over SymPy-computed mathematics. Not LLM output.",
+        "llm": null
+      },
+      "verification_status": {
+        "status": "verified",
+        "checker": "sympy 1.14.0",
+        "claims_checked": 13,
+        "step_verdicts": [
+          "d/dx of x**3 - 12*x is 3*x**2 - 12",
+          "true critical points: [2]",
+          "all evaluations exact",
+          "absolute max is 0 at [0]"
+        ]
+      },
+      "pack_version": "1.0.0"
+    },
+    {
+      "id": "int-05",
+      "topic": "closed-interval",
+      "difficulty": 1,
+      "problem_statement": {
+        "text": "Find the absolute maximum of f on the interval.",
+        "latex": "f(x) = x^{3} - 3x + 1,\\quad x \\in [0,\\,2]"
+      },
+      "steps": [
+        {
+          "n": 1,
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 3",
+          "claim": {
+            "type": "derivative",
+            "f": "x**3 - 3*x + 1",
+            "expr": "3*x**2 - 3"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 2,
+          "text": "Solve f′(x) = 0 and keep the solutions in [0, 2].",
+          "latex": "3 x^{2} - 3 = 0 \\;\\Rightarrow\\; x = 1",
+          "claim": {
+            "type": "critical_points",
+            "f": "x**3 - 3*x + 1",
+            "interval": [
+              "0",
+              "2"
+            ],
+            "points": [
+              "1"
+            ]
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 3,
+          "text": "Evaluate f at the endpoints and the critical points.",
+          "latex": "f\\left(0\\right) = 1,\\; f\\left(1\\right) = -1,\\; f\\left(2\\right) = 1",
+          "claim": {
+            "type": "evaluations",
+            "f": "x**3 - 3*x + 1",
+            "pairs": [
+              [
+                "0",
+                "1"
+              ],
+              [
+                "1",
+                "-1"
+              ],
+              [
+                "2",
+                "1"
+              ]
+            ]
+          },
+          "verdict": "invalid"
+        },
+        {
+          "n": 4,
+          "text": "The largest value is the absolute maximum.",
+          "latex": "\\text{absolute maximum } = 1 \\text{ at } x = 0, x = 2",
+          "claim": {
+            "type": "absolute_extremum",
+            "f": "x**3 - 3*x + 1",
+            "interval": [
+              "0",
+              "2"
+            ],
+            "kind": "max",
+            "value": "1",
+            "at": [
+              "0",
+              "2"
+            ]
+          },
+          "verdict": "invalid"
+        }
+      ],
+      "first_incorrect_step": 3,
+      "is_fully_correct": false,
+      "mistake_label": "bad_evaluation",
+      "corrected_step": {
+        "text": "Evaluations",
+        "latex": "f\\left(0\\right) = 1,\\; f\\left(1\\right) = -1,\\; f\\left(2\\right) = 3",
+        "claim": {
+          "type": "evaluations",
+          "f": "x**3 - 3*x + 1",
+          "pairs": [
+            [
+              "0",
+              "1"
+            ],
+            [
+              "1",
+              "-1"
+            ],
+            [
+              "2",
+              "3"
+            ]
+          ]
+        },
+        "step": 3
+      },
+      "fix_options": [
+        {
+          "id": "f1",
+          "text": "Evaluations",
+          "latex": "f\\left(0\\right) = 1,\\; f\\left(1\\right) = -1,\\; f\\left(2\\right) = 1",
+          "claim": {
+            "type": "evaluations",
+            "f": "x**3 - 3*x + 1",
+            "pairs": [
+              [
+                "0",
+                "1"
+              ],
+              [
+                "1",
+                "-1"
+              ],
+              [
+                "2",
+                "1"
+              ]
+            ]
+          }
+        },
+        {
+          "id": "f2",
+          "text": "Evaluations",
+          "latex": "f\\left(0\\right) = 1,\\; f\\left(1\\right) = -1,\\; f\\left(2\\right) = 3",
+          "claim": {
+            "type": "evaluations",
+            "f": "x**3 - 3*x + 1",
+            "pairs": [
+              [
+                "0",
+                "1"
+              ],
+              [
+                "1",
+                "-1"
+              ],
+              [
+                "2",
+                "3"
+              ]
+            ]
+          }
+        },
+        {
+          "id": "f3",
+          "text": "Evaluations",
+          "latex": "f\\left(0\\right) = 1,\\; f\\left(1\\right) = -1,\\; f\\left(2\\right) = -3",
+          "claim": {
+            "type": "evaluations",
+            "f": "x**3 - 3*x + 1",
+            "pairs": [
+              [
+                "0",
+                "1"
+              ],
+              [
+                "1",
+                "-1"
+              ],
+              [
+                "2",
+                "-3"
+              ]
+            ]
+          }
+        },
+        {
+          "id": "f4",
+          "text": "Evaluations",
+          "latex": "f\\left(0\\right) = 2,\\; f\\left(1\\right) = -1,\\; f\\left(2\\right) = 3",
+          "claim": {
+            "type": "evaluations",
+            "f": "x**3 - 3*x + 1",
+            "pairs": [
+              [
+                "0",
+                "2"
+              ],
+              [
+                "1",
+                "-1"
+              ],
+              [
+                "2",
+                "3"
+              ]
+            ]
+          }
+        }
+      ],
+      "correct_fix": "f2",
+      "why_options": [
+        {
+          "id": "solved_f_not_fprime",
+          "label": "Solved f(x) = 0 instead of f′(x) = 0"
+        },
+        {
+          "id": "outside_interval",
+          "label": "Used a critical point outside the interval"
+        },
+        {
+          "id": "local_vs_absolute",
+          "label": "Confused a local extremum with the absolute extremum"
+        },
+        {
+          "id": "bad_evaluation",
+          "label": "Incorrect evaluation of f at a point"
+        }
+      ],
+      "correct_why": "bad_evaluation",
+      "correct_solution": [
+        {
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 3"
+        },
+        {
+          "text": "Critical points: solve f′(x) = 0 and keep those inside [0, 2].",
+          "latex": "x = 1"
+        },
+        {
+          "text": "Evaluate f at every critical point AND both endpoints.",
+          "latex": "f\\left(0\\right) = 1,\\; f\\left(1\\right) = -1,\\; f\\left(2\\right) = 3"
+        },
+        {
+          "text": "Compare all candidate values.",
+          "latex": "\\text{absolute maximum } = 3 \\text{ at } x = 2"
+        }
+      ],
+      "verified_answer": {
+        "latex": "\\text{absolute maximum } = 3 \\text{ at } x = 2",
+        "claim": {
+          "type": "absolute_extremum",
+          "f": "x**3 - 3*x + 1",
+          "interval": [
+            "0",
+            "2"
+          ],
+          "kind": "max",
+          "value": "3",
+          "at": [
+            "2"
+          ]
+        }
+      },
+      "key_lesson": "Re-check arithmetic when you substitute. One wrong value can change the conclusion.",
+      "hint_ladder": [
+        "On a closed interval, which x-values are candidates for the absolute maximum?",
+        "List every candidate: the critical points inside the interval and the two endpoints. Did the attempt check all of them?",
+        "Compute f(0) and f(2) yourself and compare them with the values in step 3."
+      ],
+      "source_provenance": {
+        "method": "template",
+        "description": "Hand-authored misconception template over SymPy-computed mathematics. Not LLM output.",
+        "llm": null
+      },
+      "verification_status": {
+        "status": "verified",
+        "checker": "sympy 1.14.0",
+        "claims_checked": 13,
+        "step_verdicts": [
+          "d/dx of x**3 - 3*x + 1 is 3*x**2 - 3",
+          "true critical points: [1]",
+          "f(2) = 3, not 1",
+          "absolute max is 3 at [2]"
+        ]
+      },
+      "pack_version": "1.0.0"
+    },
+    {
+      "id": "int-06",
+      "topic": "closed-interval",
+      "difficulty": 2,
+      "problem_statement": {
+        "text": "Find the absolute maximum of f on the interval.",
+        "latex": "f(x) = x^{3} - 3x,\\quad x \\in [-2,\\,3]"
+      },
+      "steps": [
+        {
+          "n": 1,
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 3",
+          "claim": {
+            "type": "derivative",
+            "f": "x**3 - 3*x",
+            "expr": "3*x**2 - 3"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 2,
+          "text": "Solve f′(x) = 0. Both solutions lie in [-2, 3].",
+          "latex": "3 x^{2} - 3 = 0 \\;\\Rightarrow\\; x = -1,\\; x = 1",
+          "claim": {
+            "type": "critical_points",
+            "f": "x**3 - 3*x",
+            "interval": [
+              "-2",
+              "3"
+            ],
+            "points": [
+              "-1",
+              "1"
+            ]
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 3,
+          "text": "Second-derivative test: f″(x) = 6 x.",
+          "latex": "\\text{local maximum at } x = -1,\\; f(-1) = 2",
+          "claim": {
+            "type": "local_extrema",
+            "f": "x**3 - 3*x",
+            "interval": [
+              "-2",
+              "3"
+            ],
+            "max": [
+              "-1"
+            ],
+            "min": [
+              "1"
+            ]
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 4,
+          "text": "The only local maximum is the absolute maximum.",
+          "latex": "\\text{absolute maximum } = 2 \\text{ at } x = -1",
+          "claim": {
+            "type": "absolute_extremum",
+            "f": "x**3 - 3*x",
+            "interval": [
+              "-2",
+              "3"
+            ],
+            "kind": "max",
+            "value": "2",
+            "at": [
+              "-1"
+            ]
+          },
+          "verdict": "invalid"
+        }
+      ],
+      "first_incorrect_step": 4,
+      "is_fully_correct": false,
+      "mistake_label": "local_vs_absolute",
+      "corrected_step": {
+        "text": "Also compare the endpoints f(-2) = -2 and f(3) = 18.",
+        "latex": "\\text{absolute maximum } = 18 \\text{ at } x = 3",
+        "claim": {
+          "type": "absolute_extremum",
+          "f": "x**3 - 3*x",
+          "interval": [
+            "-2",
+            "3"
+          ],
+          "kind": "max",
+          "value": "18",
+          "at": [
+            "3"
+          ]
+        },
+        "step": 4
+      },
+      "fix_options": [
+        {
+          "id": "f1",
+          "text": "Endpoint with the extreme value.",
+          "latex": "\\text{absolute maximum } = 18 \\text{ at } x = -2",
+          "claim": {
+            "type": "absolute_extremum",
+            "f": "x**3 - 3*x",
+            "interval": [
+              "-2",
+              "3"
+            ],
+            "kind": "max",
+            "value": "18",
+            "at": [
+              "-2"
+            ]
+          }
+        },
+        {
+          "id": "f2",
+          "text": "Pick the smallest candidate value.",
+          "latex": "\\text{absolute maximum } = -2 \\text{ at } x = -2, x = 1",
+          "claim": {
+            "type": "absolute_extremum",
+            "f": "x**3 - 3*x",
+            "interval": [
+              "-2",
+              "3"
+            ],
+            "kind": "max",
+            "value": "-2",
+            "at": [
+              "-2",
+              "1"
+            ]
+          }
+        },
+        {
+          "id": "f3",
+          "text": "Also compare the endpoints f(-2) = -2 and f(3) = 18.",
+          "latex": "\\text{absolute maximum } = 18 \\text{ at } x = 3",
+          "claim": {
+            "type": "absolute_extremum",
+            "f": "x**3 - 3*x",
+            "interval": [
+              "-2",
+              "3"
+            ],
+            "kind": "max",
+            "value": "18",
+            "at": [
+              "3"
+            ]
+          }
+        },
+        {
+          "id": "f4",
+          "text": "Keep the critical-point answer.",
+          "latex": "\\text{absolute maximum } = 2 \\text{ at } x = -1",
+          "claim": {
+            "type": "absolute_extremum",
+            "f": "x**3 - 3*x",
+            "interval": [
+              "-2",
+              "3"
+            ],
+            "kind": "max",
+            "value": "2",
+            "at": [
+              "-1"
+            ]
+          }
+        }
+      ],
+      "correct_fix": "f3",
+      "why_options": [
+        {
+          "id": "outside_interval",
+          "label": "Used a critical point outside the interval"
+        },
+        {
+          "id": "local_vs_absolute",
+          "label": "Confused a local extremum with the absolute extremum"
+        },
+        {
+          "id": "solved_f_not_fprime",
+          "label": "Solved f(x) = 0 instead of f′(x) = 0"
+        },
+        {
+          "id": "forgot_endpoints",
+          "label": "Forgot to evaluate the interval endpoints"
+        }
+      ],
+      "correct_why": "local_vs_absolute",
+      "correct_solution": [
+        {
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 3"
+        },
+        {
+          "text": "Critical points: solve f′(x) = 0 and keep those inside [-2, 3].",
+          "latex": "x = -1,\\; x = 1"
+        },
+        {
+          "text": "Evaluate f at every critical point AND both endpoints.",
+          "latex": "f\\left(-2\\right) = -2,\\; f\\left(-1\\right) = 2,\\; f\\left(1\\right) = -2,\\; f\\left(3\\right) = 18"
+        },
+        {
+          "text": "Compare all candidate values.",
+          "latex": "\\text{absolute maximum } = 18 \\text{ at } x = 3"
+        }
+      ],
+      "verified_answer": {
+        "latex": "\\text{absolute maximum } = 18 \\text{ at } x = 3",
+        "claim": {
+          "type": "absolute_extremum",
+          "f": "x**3 - 3*x",
+          "interval": [
+            "-2",
+            "3"
+          ],
+          "kind": "max",
+          "value": "18",
+          "at": [
+            "3"
+          ]
+        }
+      },
+      "key_lesson": "A local extremum is only a candidate. Compare it with the endpoints to find the absolute one.",
+      "hint_ladder": [
+        "On a closed interval, which x-values are candidates for the absolute maximum?",
+        "List every candidate: the critical points inside the interval and the two endpoints. Did the attempt check all of them?",
+        "Compute f(-2) and f(3) yourself and compare them with the values in step 3."
+      ],
+      "source_provenance": {
+        "method": "template",
+        "description": "Hand-authored misconception template over SymPy-computed mathematics. Not LLM output.",
+        "llm": null
+      },
+      "verification_status": {
+        "status": "verified",
+        "checker": "sympy 1.14.0",
+        "claims_checked": 13,
+        "step_verdicts": [
+          "d/dx of x**3 - 3*x is 3*x**2 - 3",
+          "true critical points: [-1, 1]",
+          "local max [-1], local min [1]",
+          "absolute max is 18 at [3]"
+        ]
+      },
+      "pack_version": "1.0.0"
+    },
+    {
+      "id": "int-07",
+      "topic": "closed-interval",
+      "difficulty": 3,
+      "problem_statement": {
+        "text": "Find the absolute minimum of f on the interval.",
+        "latex": "f(x) = 2x^{3} - 3x^{2} - 12x,\\quad x \\in [-2,\\,3]"
+      },
+      "steps": [
+        {
+          "n": 1,
+          "text": "Differentiate.",
+          "latex": "f'(x) = 6 x^{2} - 6 x - 12",
+          "claim": {
+            "type": "derivative",
+            "f": "2*x**3 - 3*x**2 - 12*x",
+            "expr": "6*x**2 - 6*x - 12"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 2,
+          "text": "Solve f′(x) = 0. Both solutions lie in [-2, 3].",
+          "latex": "6 x^{2} - 6 x - 12 = 0 \\;\\Rightarrow\\; x = -1,\\; x = 2",
+          "claim": {
+            "type": "critical_points",
+            "f": "2*x**3 - 3*x**2 - 12*x",
+            "interval": [
+              "-2",
+              "3"
+            ],
+            "points": [
+              "-1",
+              "2"
+            ]
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 3,
+          "text": "Evaluate f at the endpoints and the critical points.",
+          "latex": "f\\left(-2\\right) = -4,\\; f\\left(-1\\right) = 7,\\; f\\left(2\\right) = -20,\\; f\\left(3\\right) = -9",
+          "claim": {
+            "type": "evaluations",
+            "f": "2*x**3 - 3*x**2 - 12*x",
+            "pairs": [
+              [
+                "-2",
+                "-4"
+              ],
+              [
+                "-1",
+                "7"
+              ],
+              [
+                "2",
+                "-20"
+              ],
+              [
+                "3",
+                "-9"
+              ]
+            ]
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 4,
+          "text": "The smallest value is the absolute minimum.",
+          "latex": "\\text{absolute minimum } = -20 \\text{ at } x = 2",
+          "claim": {
+            "type": "absolute_extremum",
+            "f": "2*x**3 - 3*x**2 - 12*x",
+            "interval": [
+              "-2",
+              "3"
+            ],
+            "kind": "min",
+            "value": "-20",
+            "at": [
+              "2"
+            ]
+          },
+          "verdict": "valid"
+        }
+      ],
+      "first_incorrect_step": null,
+      "is_fully_correct": true,
+      "mistake_label": null,
+      "corrected_step": null,
+      "fix_options": [],
+      "correct_fix": null,
+      "why_options": [],
+      "correct_why": null,
+      "correct_solution": [
+        {
+          "text": "Differentiate.",
+          "latex": "f'(x) = 6 x^{2} - 6 x - 12"
+        },
+        {
+          "text": "Critical points: solve f′(x) = 0 and keep those inside [-2, 3].",
+          "latex": "x = -1,\\; x = 2"
+        },
+        {
+          "text": "Evaluate f at every critical point AND both endpoints.",
+          "latex": "f\\left(-2\\right) = -4,\\; f\\left(-1\\right) = 7,\\; f\\left(2\\right) = -20,\\; f\\left(3\\right) = -9"
+        },
+        {
+          "text": "Compare all candidate values.",
+          "latex": "\\text{absolute minimum } = -20 \\text{ at } x = 2"
+        }
+      ],
+      "verified_answer": {
+        "latex": "\\text{absolute minimum } = -20 \\text{ at } x = 2",
+        "claim": {
+          "type": "absolute_extremum",
+          "f": "2*x**3 - 3*x**2 - 12*x",
+          "interval": [
+            "-2",
+            "3"
+          ],
+          "kind": "min",
+          "value": "-20",
+          "at": [
+            "2"
+          ]
+        }
+      },
+      "key_lesson": "Closed-interval method: critical points inside the interval plus both endpoints, then compare.",
+      "hint_ladder": [
+        "On a closed interval, which x-values are candidates for the absolute minimum?",
+        "List every candidate: the critical points inside the interval and the two endpoints. Did the attempt check all of them?",
+        "Compute f(-2) and f(3) yourself and compare them with the values in step 3."
+      ],
+      "source_provenance": {
+        "method": "template",
+        "description": "Hand-authored misconception template over SymPy-computed mathematics. Not LLM output.",
+        "llm": null
+      },
+      "verification_status": {
+        "status": "verified",
+        "checker": "sympy 1.14.0",
+        "claims_checked": 9,
+        "step_verdicts": [
+          "d/dx of 2*x**3 - 3*x**2 - 12*x is 6*x**2 - 6*x - 12",
+          "true critical points: [-1, 2]",
+          "all evaluations exact",
+          "absolute min is -20 at [2]"
+        ]
+      },
+      "pack_version": "1.0.0"
+    },
+    {
+      "id": "int-08",
+      "topic": "closed-interval",
+      "difficulty": 2,
+      "problem_statement": {
+        "text": "Find the absolute maximum of f on the interval.",
+        "latex": "f(x) = x^{3} - 3x^{2} - 9x,\\quad x \\in [-2,\\,4]"
+      },
+      "steps": [
+        {
+          "n": 1,
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 6 x - 9",
+          "claim": {
+            "type": "derivative",
+            "f": "x**3 - 3*x**2 - 9*x",
+            "expr": "3*x**2 - 6*x - 9"
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 2,
+          "text": "Solve f′(x) = 0. Both solutions lie in [-2, 4].",
+          "latex": "3 x^{2} - 6 x - 9 = 0 \\;\\Rightarrow\\; x = -1,\\; x = 3",
+          "claim": {
+            "type": "critical_points",
+            "f": "x**3 - 3*x**2 - 9*x",
+            "interval": [
+              "-2",
+              "4"
+            ],
+            "points": [
+              "-1",
+              "3"
+            ]
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 3,
+          "text": "Evaluate f at the endpoints and the critical points.",
+          "latex": "f\\left(-2\\right) = -2,\\; f\\left(-1\\right) = 5,\\; f\\left(3\\right) = -27,\\; f\\left(4\\right) = -20",
+          "claim": {
+            "type": "evaluations",
+            "f": "x**3 - 3*x**2 - 9*x",
+            "pairs": [
+              [
+                "-2",
+                "-2"
+              ],
+              [
+                "-1",
+                "5"
+              ],
+              [
+                "3",
+                "-27"
+              ],
+              [
+                "4",
+                "-20"
+              ]
+            ]
+          },
+          "verdict": "valid"
+        },
+        {
+          "n": 4,
+          "text": "The largest value is the absolute maximum.",
+          "latex": "\\text{absolute maximum } = 5 \\text{ at } x = -1",
+          "claim": {
+            "type": "absolute_extremum",
+            "f": "x**3 - 3*x**2 - 9*x",
+            "interval": [
+              "-2",
+              "4"
+            ],
+            "kind": "max",
+            "value": "5",
+            "at": [
+              "-1"
+            ]
+          },
+          "verdict": "valid"
+        }
+      ],
+      "first_incorrect_step": null,
+      "is_fully_correct": true,
+      "mistake_label": null,
+      "corrected_step": null,
+      "fix_options": [],
+      "correct_fix": null,
+      "why_options": [],
+      "correct_why": null,
+      "correct_solution": [
+        {
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 6 x - 9"
+        },
+        {
+          "text": "Critical points: solve f′(x) = 0 and keep those inside [-2, 4].",
+          "latex": "x = -1,\\; x = 3"
+        },
+        {
+          "text": "Evaluate f at every critical point AND both endpoints.",
+          "latex": "f\\left(-2\\right) = -2,\\; f\\left(-1\\right) = 5,\\; f\\left(3\\right) = -27,\\; f\\left(4\\right) = -20"
+        },
+        {
+          "text": "Compare all candidate values.",
+          "latex": "\\text{absolute maximum } = 5 \\text{ at } x = -1"
+        }
+      ],
+      "verified_answer": {
+        "latex": "\\text{absolute maximum } = 5 \\text{ at } x = -1",
+        "claim": {
+          "type": "absolute_extremum",
+          "f": "x**3 - 3*x**2 - 9*x",
+          "interval": [
+            "-2",
+            "4"
+          ],
+          "kind": "max",
+          "value": "5",
+          "at": [
+            "-1"
+          ]
+        }
+      },
+      "key_lesson": "Closed-interval method: critical points inside the interval plus both endpoints, then compare.",
+      "hint_ladder": [
+        "On a closed interval, which x-values are candidates for the absolute maximum?",
+        "List every candidate: the critical points inside the interval and the two endpoints. Did the attempt check all of them?",
+        "Compute f(-2) and f(4) yourself and compare them with the values in step 3."
+      ],
+      "source_provenance": {
+        "method": "template",
+        "description": "Hand-authored misconception template over SymPy-computed mathematics. Not LLM output.",
+        "llm": null
+      },
+      "verification_status": {
+        "status": "verified",
+        "checker": "sympy 1.14.0",
+        "claims_checked": 9,
+        "step_verdicts": [
+          "d/dx of x**3 - 3*x**2 - 9*x is 3*x**2 - 6*x - 9",
+          "true critical points: [-1, 3]",
+          "all evaluations exact",
+          "absolute max is 5 at [-1]"
+        ]
+      },
+      "pack_version": "1.0.0"
+    }
+  ],
+  "exercises": [
+    {
+      "id": "yt-der-01",
+      "topic": "derivatives",
+      "difficulty": 1,
+      "prompt": "Find f′(x). Type your answer in terms of x.",
+      "latex": "f(x) = 3 x^{4} - 5 x + \\frac{2}{x^{3}}",
+      "answer": {
+        "kind": "expression",
+        "coeffs": {
+          "0": "-5",
+          "-4": "-6",
+          "3": "12"
+        }
+      },
+      "answer_latex": "f'(x) = 12 x^{3} - 5 - \\frac{6}{x^{4}}",
+      "input_help": "Use ^ for powers and * or nothing for multiplication, e.g. 12x^3 - 6x^(-4) or 8(2x+3)^3.",
+      "hint": "Rewrite each fraction as a power of x first, e.g. 2/x^3 = 2x^(-3).",
+      "solution": [
+        {
+          "text": "Rewrite as powers of x.",
+          "latex": "f(x) = 3x^{4} + 2x^{-3} - 5x"
+        },
+        {
+          "text": "Power rule on each term.",
+          "latex": "12x^{3} - 6x^{-4} - 5"
+        },
+        {
+          "text": "Answer.",
+          "latex": "f'(x) = 12 x^{3} - 5 - \\frac{6}{x^{4}}"
+        }
+      ]
+    },
+    {
+      "id": "yt-der-02",
+      "topic": "derivatives",
+      "difficulty": 1,
+      "prompt": "Find f′(x). Type your answer in terms of x.",
+      "latex": "f(x) = x^{5} + 7 - \\frac{4}{x}",
+      "answer": {
+        "kind": "expression",
+        "coeffs": {
+          "-2": "4",
+          "4": "5"
+        }
+      },
+      "answer_latex": "f'(x) = 5 x^{4} + \\frac{4}{x^{2}}",
+      "input_help": "Use ^ for powers and * or nothing for multiplication, e.g. 12x^3 - 6x^(-4) or 8(2x+3)^3.",
+      "hint": "Rewrite each fraction as a power of x first, e.g. 2/x^3 = 2x^(-3).",
+      "solution": [
+        {
+          "text": "Rewrite as powers of x.",
+          "latex": "f(x) = x^{5} - 4x^{-1} + 7"
+        },
+        {
+          "text": "Power rule; the constant 7 differentiates to 0.",
+          "latex": "5x^{4} + 4x^{-2}"
+        },
+        {
+          "text": "Answer.",
+          "latex": "f'(x) = 5 x^{4} + \\frac{4}{x^{2}}"
+        }
+      ]
+    },
+    {
+      "id": "yt-der-03",
+      "topic": "derivatives",
+      "difficulty": 2,
+      "prompt": "Find f′(x). Type your answer in terms of x.",
+      "latex": "f(x) = 2 x^{3} + x - \\frac{6}{x^{2}}",
+      "answer": {
+        "kind": "expression",
+        "coeffs": {
+          "0": "1",
+          "2": "6",
+          "-3": "12"
+        }
+      },
+      "answer_latex": "f'(x) = 6 x^{2} + 1 + \\frac{12}{x^{3}}",
+      "input_help": "Use ^ for powers and * or nothing for multiplication, e.g. 12x^3 - 6x^(-4) or 8(2x+3)^3.",
+      "hint": "Rewrite each fraction as a power of x first, e.g. 2/x^3 = 2x^(-3).",
+      "solution": [
+        {
+          "text": "Rewrite as powers of x.",
+          "latex": "f(x) = 2x^{3} - 6x^{-2} + x"
+        },
+        {
+          "text": "Power rule on each term.",
+          "latex": "6x^{2} + 12x^{-3} + 1"
+        },
+        {
+          "text": "Answer.",
+          "latex": "f'(x) = 6 x^{2} + 1 + \\frac{12}{x^{3}}"
+        }
+      ]
+    },
+    {
+      "id": "yt-der-04",
+      "topic": "derivatives",
+      "difficulty": 2,
+      "prompt": "Find f′(x). Type your answer in terms of x.",
+      "latex": "f(x) = 5 x^{2} + \\frac{3}{x^{4}}",
+      "answer": {
+        "kind": "expression",
+        "coeffs": {
+          "-5": "-12",
+          "1": "10"
+        }
+      },
+      "answer_latex": "f'(x) = 10 x - \\frac{12}{x^{5}}",
+      "input_help": "Use ^ for powers and * or nothing for multiplication, e.g. 12x^3 - 6x^(-4) or 8(2x+3)^3.",
+      "hint": "Rewrite each fraction as a power of x first, e.g. 2/x^3 = 2x^(-3).",
+      "solution": [
+        {
+          "text": "Rewrite as powers of x.",
+          "latex": "f(x) = 5x^{2} + 3x^{-4}"
+        },
+        {
+          "text": "Power rule on each term.",
+          "latex": "10x - 12x^{-5}"
+        },
+        {
+          "text": "Answer.",
+          "latex": "f'(x) = 10 x - \\frac{12}{x^{5}}"
+        }
+      ]
+    },
+    {
+      "id": "yt-chn-01",
+      "topic": "chain-rule",
+      "difficulty": 1,
+      "prompt": "Find f′(x). Type your answer in terms of x.",
+      "latex": "f(x) = \\left(2 x + 3\\right)^{4}",
+      "answer": {
+        "kind": "expression",
+        "coeffs": {
+          "0": "216",
+          "3": "64",
+          "2": "288",
+          "1": "432"
+        }
+      },
+      "answer_latex": "f'(x) = 8 \\left(2 x + 3\\right)^{3}",
+      "input_help": "Use ^ for powers and * or nothing for multiplication, e.g. 12x^3 - 6x^(-4) or 8(2x+3)^3.",
+      "hint": "Name the inner function u, differentiate the outside, then multiply by du/dx.",
+      "solution": [
+        {
+          "text": "Outer u^4, inner u = 2x + 3.",
+          "latex": "\\frac{d}{du}u^{4} = 4u^{3},\\quad \\frac{du}{dx} = 2"
+        },
+        {
+          "text": "Answer.",
+          "latex": "f'(x) = 8 \\left(2 x + 3\\right)^{3}"
+        }
+      ]
+    },
+    {
+      "id": "yt-chn-02",
+      "topic": "chain-rule",
+      "difficulty": 2,
+      "prompt": "Find f′(x). Type your answer in terms of x.",
+      "latex": "f(x) = \\left(x^{2} + 1\\right)^{3}",
+      "answer": {
+        "kind": "expression",
+        "coeffs": {
+          "1": "6",
+          "5": "6",
+          "3": "12"
+        }
+      },
+      "answer_latex": "f'(x) = 6 x \\left(x^{2} + 1\\right)^{2}",
+      "input_help": "Use ^ for powers and * or nothing for multiplication, e.g. 12x^3 - 6x^(-4) or 8(2x+3)^3.",
+      "hint": "Name the inner function u, differentiate the outside, then multiply by du/dx.",
+      "solution": [
+        {
+          "text": "Outer u^3, inner u = x^2 + 1.",
+          "latex": "\\frac{d}{du}u^{3} = 3u^{2},\\quad \\frac{du}{dx} = 2x"
+        },
+        {
+          "text": "Answer.",
+          "latex": "f'(x) = 6 x \\left(x^{2} + 1\\right)^{2}"
+        }
+      ]
+    },
+    {
+      "id": "yt-chn-03",
+      "topic": "chain-rule",
+      "difficulty": 2,
+      "prompt": "Find f′(x). Type your answer in terms of x.",
+      "latex": "f(x) = \\left(5 - 3 x\\right)^{5}",
+      "answer": {
+        "kind": "expression",
+        "coeffs": {
+          "0": "-9375",
+          "2": "-20250",
+          "4": "-1215",
+          "3": "8100",
+          "1": "22500"
+        }
+      },
+      "answer_latex": "f'(x) = - 15 \\left(5 - 3 x\\right)^{4}",
+      "input_help": "Use ^ for powers and * or nothing for multiplication, e.g. 12x^3 - 6x^(-4) or 8(2x+3)^3.",
+      "hint": "Name the inner function u, differentiate the outside, then multiply by du/dx.",
+      "solution": [
+        {
+          "text": "Outer u^5, inner u = 5 − 3x.",
+          "latex": "\\frac{d}{du}u^{5} = 5u^{4},\\quad \\frac{du}{dx} = -3"
+        },
+        {
+          "text": "Answer.",
+          "latex": "f'(x) = - 15 \\left(5 - 3 x\\right)^{4}"
+        }
+      ]
+    },
+    {
+      "id": "yt-chn-04",
+      "topic": "chain-rule",
+      "difficulty": 3,
+      "prompt": "Find f′(x). Type your answer in terms of x.",
+      "latex": "f(x) = \\left(x^{3} - 2 x\\right)^{2}",
+      "answer": {
+        "kind": "expression",
+        "coeffs": {
+          "3": "-16",
+          "5": "6",
+          "1": "8"
+        }
+      },
+      "answer_latex": "f'(x) = \\left(6 x^{2} - 4\\right) \\left(x^{3} - 2 x\\right)",
+      "input_help": "Use ^ for powers and * or nothing for multiplication, e.g. 12x^3 - 6x^(-4) or 8(2x+3)^3.",
+      "hint": "Name the inner function u, differentiate the outside, then multiply by du/dx.",
+      "solution": [
+        {
+          "text": "Outer u^2, inner u = x^3 − 2x.",
+          "latex": "\\frac{d}{du}u^{2} = 2u,\\quad \\frac{du}{dx} = 3x^{2} - 2"
+        },
+        {
+          "text": "Answer.",
+          "latex": "f'(x) = \\left(6 x^{2} - 4\\right) \\left(x^{3} - 2 x\\right)"
+        }
+      ]
+    },
+    {
+      "id": "yt-crt-01",
+      "topic": "critical-points",
+      "difficulty": 1,
+      "prompt": "Find every critical point of f. List the x-values, separated by commas.",
+      "latex": "f(x) = x^{3} - 3 x^{2} - 9 x + 4",
+      "answer": {
+        "kind": "points",
+        "values": [
+          "-1",
+          "3"
+        ]
+      },
+      "answer_latex": "x = -1, x = 3",
+      "input_help": "Separate values with commas, e.g. -1, 3. Fractions like 2/3 are fine.",
+      "hint": "Solve f′(x) = 0, not f(x) = 0. Factor f′(x) first.",
+      "solution": [
+        {
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 6 x - 9 = 3 \\left(x - 3\\right) \\left(x + 1\\right)"
+        },
+        {
+          "text": "Set f′(x) = 0 and solve.",
+          "latex": "x = -1, x = 3"
+        }
+      ]
+    },
+    {
+      "id": "yt-crt-02",
+      "topic": "critical-points",
+      "difficulty": 2,
+      "prompt": "Find every critical point of f. List the x-values, separated by commas.",
+      "latex": "f(x) = 2 x^{3} + 3 x^{2} - 12 x",
+      "answer": {
+        "kind": "points",
+        "values": [
+          "-2",
+          "1"
+        ]
+      },
+      "answer_latex": "x = -2, x = 1",
+      "input_help": "Separate values with commas, e.g. -1, 3. Fractions like 2/3 are fine.",
+      "hint": "Solve f′(x) = 0, not f(x) = 0. Factor f′(x) first.",
+      "solution": [
+        {
+          "text": "Differentiate.",
+          "latex": "f'(x) = 6 x^{2} + 6 x - 12 = 6 \\left(x - 1\\right) \\left(x + 2\\right)"
+        },
+        {
+          "text": "Set f′(x) = 0 and solve.",
+          "latex": "x = -2, x = 1"
+        }
+      ]
+    },
+    {
+      "id": "yt-crt-03",
+      "topic": "critical-points",
+      "difficulty": 2,
+      "prompt": "Find every critical point of f. List the x-values, separated by commas.",
+      "latex": "f(x) = x^{4} - 8 x^{2}",
+      "answer": {
+        "kind": "points",
+        "values": [
+          "-2",
+          "0",
+          "2"
+        ]
+      },
+      "answer_latex": "x = -2, x = 0, x = 2",
+      "input_help": "Separate values with commas, e.g. -1, 3. Fractions like 2/3 are fine.",
+      "hint": "Solve f′(x) = 0, not f(x) = 0. Factor f′(x) first.",
+      "solution": [
+        {
+          "text": "Differentiate.",
+          "latex": "f'(x) = 4 x^{3} - 16 x = 4 x \\left(x - 2\\right) \\left(x + 2\\right)"
+        },
+        {
+          "text": "Set f′(x) = 0 and solve.",
+          "latex": "x = -2, x = 0, x = 2"
+        }
+      ]
+    },
+    {
+      "id": "yt-crt-04",
+      "topic": "critical-points",
+      "difficulty": 3,
+      "prompt": "Find every critical point of f. List the x-values, separated by commas.",
+      "latex": "f(x) = x^{3} - 6 x^{2} + 12 x",
+      "answer": {
+        "kind": "points",
+        "values": [
+          "2"
+        ]
+      },
+      "answer_latex": "x = 2",
+      "input_help": "Separate values with commas, e.g. -1, 3. Fractions like 2/3 are fine.",
+      "hint": "Factor f′(x) completely. A repeated factor gives one critical point, not two.",
+      "solution": [
+        {
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 12 x + 12 = 3 \\left(x - 2\\right)^{2}"
+        },
+        {
+          "text": "Set f′(x) = 0 and solve.",
+          "latex": "x = 2"
+        }
+      ]
+    },
+    {
+      "id": "yt-int-01",
+      "topic": "closed-interval",
+      "difficulty": 1,
+      "prompt": "Find the absolute maximum of f on the interval, and every x where it happens.",
+      "latex": "f(x) = x^{3} - 3 x,\\quad x \\in [0,\\,3]",
+      "answer": {
+        "kind": "extremum",
+        "extremum": "max",
+        "value": "18",
+        "at": [
+          "3"
+        ]
+      },
+      "answer_latex": "\\text{absolute maximum } = 18 \\text{ at } x = 3",
+      "input_help": "Enter the value, then the x-value(s). Separate several x-values with commas.",
+      "hint": "Candidates are the critical points inside the interval and both endpoints. Evaluate f at all of them.",
+      "solution": [
+        {
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 3 = 3 \\left(x - 1\\right) \\left(x + 1\\right)"
+        },
+        {
+          "text": "Critical points inside [0, 3].",
+          "latex": "x = 1"
+        },
+        {
+          "text": "Evaluate at the critical points and both endpoints.",
+          "latex": "f(0) = 0,\\; f(1) = -2,\\; f(3) = 18"
+        },
+        {
+          "text": "Compare.",
+          "latex": "\\text{absolute maximum } = 18 \\text{ at } x = 3"
+        }
+      ]
+    },
+    {
+      "id": "yt-int-02",
+      "topic": "closed-interval",
+      "difficulty": 2,
+      "prompt": "Find the absolute minimum of f on the interval, and every x where it happens.",
+      "latex": "f(x) = x^{3} - 3 x^{2},\\quad x \\in [1,\\,4]",
+      "answer": {
+        "kind": "extremum",
+        "extremum": "min",
+        "value": "-4",
+        "at": [
+          "2"
+        ]
+      },
+      "answer_latex": "\\text{absolute minimum } = -4 \\text{ at } x = 2",
+      "input_help": "Enter the value, then the x-value(s). Separate several x-values with commas.",
+      "hint": "Candidates are the critical points inside the interval and both endpoints. Evaluate f at all of them.",
+      "solution": [
+        {
+          "text": "Differentiate.",
+          "latex": "f'(x) = 3 x^{2} - 6 x = 3 x \\left(x - 2\\right)"
+        },
+        {
+          "text": "Critical points inside [1, 4].",
+          "latex": "x = 2"
+        },
+        {
+          "text": "Evaluate at the critical points and both endpoints.",
+          "latex": "f(1) = -2,\\; f(2) = -4,\\; f(4) = 16"
+        },
+        {
+          "text": "Compare.",
+          "latex": "\\text{absolute minimum } = -4 \\text{ at } x = 2"
+        }
+      ]
+    },
+    {
+      "id": "yt-int-03",
+      "topic": "closed-interval",
+      "difficulty": 3,
+      "prompt": "Find the absolute maximum of f on the interval, and every x where it happens.",
+      "latex": "f(x) = - x^{3} + 3 x^{2} + 1,\\quad x \\in [-1,\\,3]",
+      "answer": {
+        "kind": "extremum",
+        "extremum": "max",
+        "value": "5",
+        "at": [
+          "-1",
+          "2"
+        ]
+      },
+      "answer_latex": "\\text{absolute maximum } = 5 \\text{ at } x = -1, x = 2",
+      "input_help": "Enter the value, then the x-value(s). Separate several x-values with commas.",
+      "hint": "Candidates are the critical points inside the interval and both endpoints. Evaluate f at all of them. Two candidates can tie.",
+      "solution": [
+        {
+          "text": "Differentiate.",
+          "latex": "f'(x) = - 3 x^{2} + 6 x = - 3 x \\left(x - 2\\right)"
+        },
+        {
+          "text": "Critical points inside [-1, 3].",
+          "latex": "x = 0, x = 2"
+        },
+        {
+          "text": "Evaluate at the critical points and both endpoints.",
+          "latex": "f(-1) = 5,\\; f(0) = 1,\\; f(2) = 5,\\; f(3) = 1"
+        },
+        {
+          "text": "Compare.",
+          "latex": "\\text{absolute maximum } = 5 \\text{ at } x = -1, x = 2"
+        }
+      ]
+    },
+    {
+      "id": "yt-int-04",
+      "topic": "closed-interval",
+      "difficulty": 2,
+      "prompt": "Find the absolute minimum of f on the interval, and every x where it happens.",
+      "latex": "f(x) = 2 x^{3} - 9 x^{2} + 12 x,\\quad x \\in [0,\\,3]",
+      "answer": {
+        "kind": "extremum",
+        "extremum": "min",
+        "value": "0",
+        "at": [
+          "0"
+        ]
+      },
+      "answer_latex": "\\text{absolute minimum } = 0 \\text{ at } x = 0",
+      "input_help": "Enter the value, then the x-value(s). Separate several x-values with commas.",
+      "hint": "Candidates are the critical points inside the interval and both endpoints. Evaluate f at all of them.",
+      "solution": [
+        {
+          "text": "Differentiate.",
+          "latex": "f'(x) = 6 x^{2} - 18 x + 12 = 6 \\left(x - 2\\right) \\left(x - 1\\right)"
+        },
+        {
+          "text": "Critical points inside [0, 3].",
+          "latex": "x = 1, x = 2"
+        },
+        {
+          "text": "Evaluate at the critical points and both endpoints.",
+          "latex": "f(0) = 0,\\; f(1) = 5,\\; f(2) = 4,\\; f(3) = 9"
+        },
+        {
+          "text": "Compare.",
+          "latex": "\\text{absolute minimum } = 0 \\text{ at } x = 0"
+        }
+      ]
+    },
+    {
+      "id": "yt-int-05",
+      "topic": "closed-interval",
+      "difficulty": 2,
+      "prompt": "Find the absolute maximum of f on the interval, and every x where it happens.",
+      "latex": "f(x) = x^{4} - 2 x^{2},\\quad x \\in [-2,\\,1]",
+      "answer": {
+        "kind": "extremum",
+        "extremum": "max",
+        "value": "8",
+        "at": [
+          "-2"
+        ]
+      },
+      "answer_latex": "\\text{absolute maximum } = 8 \\text{ at } x = -2",
+      "input_help": "Enter the value, then the x-value(s). Separate several x-values with commas.",
+      "hint": "Candidates are the critical points inside the interval and both endpoints. Evaluate f at all of them.",
+      "solution": [
+        {
+          "text": "Differentiate.",
+          "latex": "f'(x) = 4 x^{3} - 4 x = 4 x \\left(x - 1\\right) \\left(x + 1\\right)"
+        },
+        {
+          "text": "Critical points inside [-2, 1].",
+          "latex": "x = -1, x = 0, x = 1"
+        },
+        {
+          "text": "Evaluate at the critical points and both endpoints.",
+          "latex": "f(-2) = 8,\\; f(-1) = -1,\\; f(0) = 0,\\; f(1) = -1"
+        },
+        {
+          "text": "Compare.",
+          "latex": "\\text{absolute maximum } = 8 \\text{ at } x = -2"
+        }
+      ]
+    }
+  ]
+}
