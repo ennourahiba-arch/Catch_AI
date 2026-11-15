@@ -80,7 +80,7 @@ def aggregate(r: dict[str, Any], teams: list[dict[str, Any]], pack: dict[str, An
     teams have submitted a catch, so no small group can be singled out.
     """
     scoring = pack["scoring"]
-    labels = pack["misconceptions"]
+    labels = {**pack["misconceptions"], **{w["id"]: w["label"] for w in r.get("why_options", [])}}
     submitted = [t for t in teams if "catch" in t["subs"]]
     out: dict[str, Any] = {
         "teams_joined": len(teams),

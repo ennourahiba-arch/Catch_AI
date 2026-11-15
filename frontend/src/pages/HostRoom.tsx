@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import { Check, Eye, Loader2, Lock, Play, Users } from "lucide-react";
 import AttemptSheet from "../components/AttemptSheet";
 import TeX from "../components/Math";
+import RichText from "../components/RichText";
 import { ErrorState, Loading } from "../components/States";
 import { Bars, ConnBadge, SolutionPanel, Timer } from "../components/Live";
 import { api, cleanCode, tokens, type Results, type RoomState } from "../lib/api";
@@ -99,8 +100,8 @@ function Running({ state, left, busy, onReveal }: { state: RoomState; left: numb
   return (
     <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start">
       <div>
-        <p className="text-[15px] text-navy-mute">{state.round.problem_statement.text}</p>
-        <TeX tex={state.round.problem_statement.latex} block className="text-xl" />
+        <p className={state.round.problem_statement.latex ? "text-[15px] text-navy-mute" : "text-xl font-bold"}><RichText text={state.round.problem_statement.text} /></p>
+        {state.round.problem_statement.latex && <TeX tex={state.round.problem_statement.latex} block className="text-xl" />}
         <div className="mt-4"><AttemptSheet round={state.round} mode="static" firstError={null} /></div>
       </div>
       <div className="grid gap-5 lg:sticky lg:top-24">
@@ -138,7 +139,7 @@ function Finished({ state }: { state: RoomState }) {
             <p className="mt-1 text-navy-soft">
               {real.teams_submitted} {real.teams_submitted === 1 ? "team" : "teams"} answered. Response breakdowns appear only when at least {real.min_teams} teams have answered, so no single team can be identified.
             </p>
-            <button className="btn-ghost mt-4" onClick={() => api.sample(state.round.id).then(setSample).catch((e) => setSampleErr(e.message))}>
+            <button className="btn-ghost mt-4" onClick={() => api.roomSample(state.code, tokens.get("host", state.code)?.token ?? "").then(setSample).catch((e) => setSampleErr(e.message))}>
               Show sample data instead
             </button>
             {sampleErr && <p className="mt-2 text-coral-ink">{sampleErr}</p>}

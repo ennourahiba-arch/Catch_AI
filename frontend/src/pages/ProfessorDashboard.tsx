@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { BadgeCheck, Loader2, Play, QrCode } from "lucide-react";
+import { BadgeCheck, FileUp, Loader2, Play, QrCode } from "lucide-react";
 import { api, tokens } from "../lib/api";
 import AttemptSheet from "../components/AttemptSheet";
 import Math from "../components/Math";
@@ -30,7 +30,16 @@ export default function ProfessorDashboard() {
         {pack.subject}. Choose a topic and a verified round. You see the answer key here; students never do until the reveal.
       </p>
 
-      <div className="mt-8 flex flex-wrap gap-2" role="tablist" aria-label="Topic">
+      <Link to="/create" className="mt-6 flex items-center justify-between gap-4 rounded-xl border-2 border-violet bg-white p-5 hover:bg-violet-wash/40">
+        <span>
+          <span className="block font-bold">Any subject: build rounds from your own course</span>
+          <span className="block text-[15px] text-navy-soft">Upload notes, slides and past exams. You review and approve each round before it reaches your class.</span>
+        </span>
+        <FileUp size={22} className="shrink-0 text-violet-ink" aria-hidden />
+      </Link>
+      <h2 className="mt-10 text-xl font-bold">Calculus 1: mathematically verified pack</h2>
+
+      <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="Topic">
         {pack.topics.map((t) => (
           <button
             key={t.id}

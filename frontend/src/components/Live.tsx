@@ -1,5 +1,7 @@
 import { BadgeCheck, Radio, RefreshCw, WifiOff } from "lucide-react";
 import TeX from "./Math";
+import RichText from "./RichText";
+import { SourceQuote } from "./YourTurn";
 import type { Reveal } from "../lib/api";
 import type { Conn } from "../lib/useRoom";
 
@@ -62,20 +64,23 @@ export function SolutionPanel({ reveal }: { reveal: Reveal }) {
           <li key={i} className="flex gap-3">
             <span className="font-display font-bold text-teal-ink">{i + 1}</span>
             <span className="min-w-0">
-              <span className="block text-[15px] text-navy-soft">{st.text}</span>
-              <TeX tex={st.latex} />
+              <RichText text={st.text} className={`block ${st.latex ? "text-[15px] text-navy-soft" : ""}`} />
+              {st.latex && <TeX tex={st.latex} />}
+              {st.quote && <SourceQuote quote={st.quote} source={st.source} />}
             </span>
           </li>
         ))}
       </ol>
       <div className="mt-4 rounded-lg bg-teal-wash px-4 py-3">
         <p className="text-[15px] font-bold text-teal-ink">Answer</p>
-        <TeX tex={reveal.verified_answer.latex} />
+        {reveal.verified_answer.latex ? <TeX tex={reveal.verified_answer.latex} /> : <RichText text={reveal.verified_answer.text ?? ""} />}
       </div>
       <p className="mt-4"><b>Remember:</b> {reveal.key_lesson}</p>
       <p className="mt-4 flex items-start gap-1.5 text-sm text-navy-mute">
         <BadgeCheck size={16} className="mt-0.5 shrink-0 text-teal-ink" aria-hidden />
-        All {reveal.claims_checked} claims in this round were checked with {reveal.checker} before class.
+        {reveal.provenance === "llm-grounded"
+          ? `${reveal.provenance_text} Quotes were matched word for word against the document, a second AI review checked the answer key, and the professor approved the round.`
+          : `All ${reveal.claims_checked} claims in this round were checked with ${reveal.checker} before class.`}
       </p>
     </section>
   );

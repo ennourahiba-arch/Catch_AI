@@ -4,6 +4,7 @@ import { Check, Loader2, X } from "lucide-react";
 import AttemptSheet from "../components/AttemptSheet";
 import OptionList from "../components/OptionList";
 import TeX from "../components/Math";
+import RichText from "../components/RichText";
 import { ErrorState, Loading } from "../components/States";
 import { ConnBadge, SolutionPanel, Timer } from "../components/Live";
 import { api, cleanCode, tokens, type RoomState } from "../lib/api";
@@ -95,8 +96,8 @@ function Game({ code, token }: { code: string; token: string }) {
       {header}
       <div className="mt-5">
         <p className="text-[15px] text-navy-mute">{state.topic_name}</p>
-        <h1 className="text-xl font-bold">{state.round.problem_statement.text}</h1>
-        <TeX tex={state.round.problem_statement.latex} block className="mt-1 text-lg" />
+        <h1 className="text-xl font-bold"><RichText text={state.round.problem_statement.text} /></h1>
+        {state.round.problem_statement.latex && <TeX tex={state.round.problem_statement.latex} block className="mt-1 text-lg" />}
       </div>
       <div className="mt-4">
         <AttemptSheet
@@ -181,7 +182,7 @@ function TeamReveal({ state }: { state: RoomState }) {
         <Note ok={!!you.subs.catch?.correct}><b>There was no mistake.</b> Every step was correct.</Note>
       ) : (
         <>
-          <Note ok={!!you.subs.fix?.correct}><b>Correct fix:</b><div className="mt-1"><TeX tex={rv.correct_fix_latex ?? ""} /></div></Note>
+          <Note ok={!!you.subs.fix?.correct}><b>Correct fix:</b><div className="mt-1">{rv.correct_fix_latex ? <TeX tex={rv.correct_fix_latex} /> : <RichText text={rv.correct_fix_text ?? ""} />}</div></Note>
           <Note ok={!!you.subs.explain?.correct}><b>Why:</b> {rv.correct_why_label}.</Note>
         </>
       )}

@@ -1,5 +1,6 @@
 import { Check, X } from "lucide-react";
 import Math from "./Math";
+import RichText from "./RichText";
 
 interface Opt { id: string; text?: string; latex?: string; label?: string }
 
@@ -38,7 +39,7 @@ export default function OptionList({
             </span>
             <span className="min-w-0 flex-1">
               {o.label && <span className="font-bold">{o.label}</span>}
-              {o.latex && <Math tex={o.latex} />}
+              {o.latex ? <Math tex={o.latex} /> : o.text && !o.label ? <RichText text={o.text} /> : null}
             </span>
             {isRight && <span className="sr-only">(correct answer)</span>}
             {isWrongSel && <span className="sr-only">(your answer, incorrect)</span>}

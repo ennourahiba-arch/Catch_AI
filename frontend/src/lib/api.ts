@@ -9,7 +9,7 @@ export class ApiError extends Error {
 
 export const cleanCode = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
 
-export interface StepView { n: number; text: string; latex: string }
+export interface StepView { n: number; text: string; latex: string; detail?: string }
 export interface PublicRound {
   id: string; topic: string; difficulty: number; pack_version: string;
   problem_statement: { text: string; latex: string };
@@ -28,10 +28,11 @@ export interface Results {
 }
 export interface Reveal {
   is_fully_correct: boolean; first_incorrect_step: number | null;
-  correct_fix: string | null; correct_fix_latex: string | null;
+  correct_fix: string | null; correct_fix_latex: string | null; correct_fix_text?: string | null;
   correct_why: string | null; correct_why_label: string | null;
-  correct_solution: { text: string; latex: string }[];
-  verified_answer: { latex: string }; key_lesson: string; checker: string; claims_checked: number;
+  correct_solution: { text: string; latex: string; quote?: string; source?: string }[];
+  verified_answer: { latex: string; text?: string }; key_lesson: string; checker: string; claims_checked: number;
+  provenance?: string; provenance_text?: string;
 }
 export interface RoomState {
   code: string; status: "lobby" | "running" | "finished";
@@ -55,9 +56,11 @@ export interface RoomState {
 
 export type Auth = { host?: string; team?: string };
 
-async function call<T>(path: string, init: { method?: string; body?: unknown; auth?: Auth } = {}): Promise<T> {
+async function call<T>(path: string, init: { method?: string; body?: unknown; auth?: Auth; form?: FormData } = {}): Promise<T> {
   const headers: Record<string, string> = {};
   if (init.body !== undefined) headers["Content-Type"] = "application/json";
+  const code = accessCode.get();
+  if (code) headers["X-Access-Code"] = code;
   if (init.auth?.host) headers["X-Host-Token"] = init.auth.host;
   if (init.auth?.team) headers["X-Team-Token"] = init.auth.team;
   let res: Response;
@@ -65,7 +68,7 @@ async function call<T>(path: string, init: { method?: string; body?: unknown; au
     res = await fetch(`${API_URL}${path}`, {
       method: init.method ?? "GET",
       headers,
-      body: init.body === undefined ? undefined : JSON.stringify(init.body),
+      body: init.form ?? (init.body === undefined ? undefined : JSON.stringify(init.body)),
     });
   } catch {
     throw new ApiError(
@@ -84,7 +87,38 @@ async function call<T>(path: string, init: { method?: string; body?: unknown; au
   return data as T;
 }
 
+export interface AIStatus { enabled: boolean; provider: string | null; model: string | null; test_mode: boolean; access_code_required: boolean; max_files: number }
+export interface Passage { id: string; file: string; text: string }
+export interface ExtractResult { documents: { file: string; chars: number }[]; passages?: Passage[]; text?: string; truncated: boolean }
+export interface ChatMsg { role: "examiner" | "student" | "candidate"; text: string }
+
+export const accessCode = {
+  get(): string { try { return localStorage.getItem("cta:access") ?? ""; } catch { return ""; } },
+  set(v: string) { try { localStorage.setItem("cta:access", v); } catch { /* ignore */ } },
+};
+
 export const api = {
+  aiStatus: () => call<AIStatus>("/api/ai/status"),
+  extract: (files: File[], kind: "material" | "past") => {
+    const form = new FormData();
+    files.forEach((f) => form.append("files", f));
+    form.append("kind", kind);
+    return call<ExtractResult>("/api/material/extract", { method: "POST", form });
+  },
+  generate: (format: string, passages: Passage[], past_exams: string, count: number) =>
+    call<import("./types").CustomPack>("/api/generate", { method: "POST", body: { format, passages, past_exams, count } }),
+  grade: (body: { question: string; key_points: string[]; model_answer: string; sources: string[]; answer: string }) =>
+    call<{ verdict: "correct" | "partial" | "incorrect"; covered: number[]; feedback: string }>("/api/grade", { method: "POST", body }),
+  examiner: (question: { question: string; key_points: string[]; model_answer: string; quote: string }, history: ChatMsg[]) =>
+    call<{ reply: string; closed: boolean; score: number | null }>("/api/oral/examiner", { method: "POST", body: { question, history } }),
+  candidate: (scenario: object, history: ChatMsg[]) =>
+    call<{ reply: string; done: boolean }>("/api/oral/candidate", { method: "POST", body: { scenario, history } }),
+  judge: (scenario: object, history: ChatMsg[], claimed_mistake: string, correction: string) =>
+    call<{ caught: boolean; corrected: boolean; feedback: string; false_claim: string; correct_claim: string; why: string; quote: string }>(
+      "/api/oral/judge", { method: "POST", body: { scenario, history, claimed_mistake, correction } }),
+  createCustomRoom: (custom_round: object, duration_s: number) =>
+    call<{ code: string; host_token: string }>("/api/rooms", { method: "POST", body: { custom_round, duration_s } }),
+  roomSample: (code: string, host: string) => call<Results>(`/api/rooms/${code}/sample`, { auth: { host } }),
   health: () => call<{ ok: boolean }>("/api/health"),
   createRoom: (round_id: string, duration_s: number) =>
     call<{ code: string; host_token: string }>("/api/rooms", { method: "POST", body: { round_id, duration_s } }),

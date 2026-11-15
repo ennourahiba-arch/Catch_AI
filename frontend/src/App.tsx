@@ -10,6 +10,8 @@ import Join from "./pages/Join";
 import TeamGame from "./pages/TeamGame";
 import HostRoom from "./pages/HostRoom";
 import Train from "./pages/Train";
+import Create from "./pages/Create";
+import MyPack, { PackOral, PackTrain } from "./pages/MyPack";
 
 export default function App() {
   return (
@@ -19,6 +21,10 @@ export default function App() {
         <Route path="student" element={<StudentDashboard />} />
         <Route path="practice/:topic" element={<Practice />} />
         <Route path="train/:topic" element={<Train />} />
+        <Route path="create" element={<Create />} />
+        <Route path="mine/:packId" element={<MyPack />} />
+        <Route path="mine/:packId/train" element={<PackTrain />} />
+        <Route path="mine/:packId/oral/:mode" element={<PackOral />} />
         <Route path="play/:roundId" element={<Play />} />
         <Route path="professor" element={<ProfessorDashboard />} />
         <Route path="join" element={<Join />} />

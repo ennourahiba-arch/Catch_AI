@@ -18,8 +18,9 @@ export default function Landing() {
             Catch the mistake before your exam catches you.
           </h1>
           <p className="mt-5 max-w-[34rem] text-lg text-navy-soft">
-            Here the AI is the student. It solves calculus problems with total confidence and slips up the way real students do.
-            You mark its work: find the first wrong step, fix it, and say why it went wrong.
+            Here the AI is the student. It answers exam questions with total confidence and slips up the way real students do.
+            You mark its work: find the first wrong step, fix it, and say why it went wrong. Start with our verified Calculus pack,
+            or upload your own course, in any subject.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link to="/student" className="btn-primary"><GraduationCap size={18} aria-hidden /> I'm a student</Link>

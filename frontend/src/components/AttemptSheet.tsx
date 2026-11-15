@@ -1,10 +1,11 @@
 import { Bot } from "lucide-react";
 import Math from "./Math";
+import RichText from "./RichText";
 import Ring from "./Ring";
 import type { CatchChoice } from "../lib/round";
 
 interface Props {
-  round: { steps: { n: number; text: string; latex: string }[] };
+  round: { steps: { n: number; text: string; latex: string; detail?: string }[] };
   /** "select": student is choosing. "review": answer revealed. "static": preview only. */
   mode: "select" | "review" | "static";
   selected?: CatchChoice | null;
@@ -39,8 +40,9 @@ export default function AttemptSheet({ round, mode, selected, onSelect, firstErr
                 {(isSel || isErr) && <Ring className="-left-0.5 -top-2.5 h-12 w-14" key={`${mode}-${s.n}`} />}
               </span>
               <span className="min-w-0 flex-1 pr-4">
-                <span className={`block ${compact ? "text-[15px]" : ""} text-navy-soft`}>{s.text}</span>
-                <Math tex={s.latex} className="mt-1 max-w-full text-navy" />
+                <RichText text={s.text} className={`block ${compact ? "text-[15px]" : ""} ${s.latex ? "text-navy-soft" : "text-navy"}`} />
+                {s.latex && <Math tex={s.latex} className="mt-1 max-w-full text-navy" />}
+                {s.detail && <RichText text={s.detail} className="mt-1.5 block rounded-md bg-violet-wash/60 px-3 py-2 text-[15px] text-navy" />}
                 {isErr && <span className="mt-1 block font-display text-[15px] font-bold text-coral-ink">First error</span>}
                 {isWrongPick && <span className="mt-1 block text-[15px] text-navy-mute">Your pick. This step is valid.</span>}
                 {isRuledOut && <span className="mt-1 block text-[15px] font-bold text-teal-ink">You checked this one: it's valid.</span>}

@@ -1,6 +1,6 @@
 // Local-only learning history in IndexedDB. Nothing here is sent to a server,
 // and professors never see it.
-import type { TopicId } from "./types";
+import type { CustomPack, TopicId } from "./types";
 
 export interface Attempt {
   id?: number;
@@ -38,8 +38,8 @@ export interface Confidence {
 
 type Store = "attempts" | "exercises" | "confidence";
 const DB = "catch-the-ai";
-const VERSION = 2;
-const memory: Record<Store, unknown[]> & { kv: Record<string, unknown> } = { attempts: [], exercises: [], confidence: [], kv: {} };
+const VERSION = 3;
+const memory: Record<Store, unknown[]> & { kv: Record<string, unknown>; packs: Record<string, CustomPack> } = { attempts: [], exercises: [], confidence: [], kv: {}, packs: {} };
 
 function open(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -51,6 +51,7 @@ function open(): Promise<IDBDatabase> {
         if (!db.objectStoreNames.contains(s)) db.createObjectStore(s, { keyPath: "id", autoIncrement: true });
       }
       if (!db.objectStoreNames.contains("kv")) db.createObjectStore("kv");
+      if (!db.objectStoreNames.contains("packs")) db.createObjectStore("packs", { keyPath: "id" });
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -109,10 +110,26 @@ export async function setKV(key: string, value: unknown): Promise<void> {
 
 export async function clearAll(): Promise<void> {
   try {
-    for (const s of ["attempts", "exercises", "confidence", "kv"]) await tx(s, "readwrite", (st) => st.clear());
+    for (const s of ["attempts", "exercises", "confidence", "kv", "packs"]) await tx(s, "readwrite", (st) => st.clear());
   } catch {
-    memory.attempts = []; memory.exercises = []; memory.confidence = []; memory.kv = {};
+    memory.attempts = []; memory.exercises = []; memory.confidence = []; memory.kv = {}; memory.packs = {};
   }
+}
+
+// ---- Packs generated from uploaded material (kept only on this device) ----
+export async function savePack(p: CustomPack): Promise<void> {
+  try { await tx("packs", "readwrite", (s) => s.put(p)); } catch { memory.packs[p.id] = p; }
+}
+export async function getPack(id: string): Promise<CustomPack | undefined> {
+  try { return (await tx<CustomPack>("packs", "readonly", (s) => s.get(id))) ?? undefined; } catch { return memory.packs[id]; }
+}
+export async function listPacks(): Promise<CustomPack[]> {
+  let all: CustomPack[];
+  try { all = await tx<CustomPack[]>("packs", "readonly", (s) => s.getAll()); } catch { all = Object.values(memory.packs); }
+  return all.sort((a, b) => b.created_at.localeCompare(a.created_at));
+}
+export async function deletePack(id: string): Promise<void> {
+  try { await tx("packs", "readwrite", (s) => s.delete(id)); } catch { delete memory.packs[id]; }
 }
 
 export async function loadHistory() {

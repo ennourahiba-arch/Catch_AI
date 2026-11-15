@@ -7,16 +7,29 @@ import { ErrorState, Loading } from "../components/States";
 import { usePack } from "../components/usePack";
 import { pickNext, readiness } from "../lib/readiness";
 import { addConfidence, loadHistory, setKV, type History } from "../lib/storage";
-import type { TopicId } from "../lib/types";
+import { asPack, type CustomPack, type Pack, type TopicId } from "../lib/types";
 import { RoundPlayer } from "./Play";
 
 type Stage = "confidence" | "round" | "yourturn" | "summary";
 const LABELS = ["Not at all", "A little", "Somewhat", "Quite", "Very"];
 
-/** Home Mode: confidence -> Catch the AI (with hints) -> Your Turn -> readiness. */
+/** Home Mode for the built-in Calculus pack: /train/:topic */
 export default function Train() {
   const topic = useParams().topic as TopicId;
   const { pack, error, retry } = usePack();
+  if (error) return <ErrorState message={error} onRetry={retry} />;
+  if (!pack) return <Loading label="Preparing your training" />;
+  if (!pack.topics.some((t) => t.id === topic)) return <ErrorState message={`There's no topic called "${topic}".`} />;
+  return <TrainSession pack={pack} topic={topic} />;
+}
+
+/** Home Mode for a pack generated from uploaded material. */
+export function TrainCustom({ custom }: { custom: CustomPack }) {
+  return <TrainSession pack={asPack(custom)} topic={custom.id} custom={custom} backTo={`/mine/${custom.id}`} />;
+}
+
+/** Confidence -> Catch the AI (with hints) -> Your Turn -> readiness. */
+function TrainSession({ pack, topic, custom, backTo = "/student" }: { pack: Pack; topic: TopicId; custom?: CustomPack; backTo?: string }) {
   const [history, setHistory] = useState<History | null>(null);
   const [stage, setStage] = useState<Stage>("confidence");
   const [session, setSession] = useState(0);
@@ -38,21 +51,18 @@ export default function Train() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pack, session, history === null]);
 
-  if (error) return <ErrorState message={error} onRetry={retry} />;
-  if (!pack || !history || !picks) {
-    if (pack && !pack.topics.some((t) => t.id === topic)) return <ErrorState message={`There's no topic called "${topic}".`} />;
-    return <Loading label="Preparing your training" />;
-  }
+  if (!history || !picks) return <Loading label="Preparing your training" />;
   const topicName = pack.topics.find((t) => t.id === topic)!.name;
   const round = pack.rounds.find((r) => r.id === picks.roundId)!;
   const exercise = pack.exercises.find((e) => e.id === picks.exerciseId)!;
+  const sources = (custom?.passages ?? []).filter((p) => (exercise.source_ids ?? []).includes(p.id)).map((p) => p.text.slice(0, 1500));
   const lastConf = history.confidence.find((c) => c.topic === topic)?.rating;
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-24 pt-6">
       {stage === "confidence" && (
         <div className="mx-auto max-w-xl py-6">
-          <Link to="/student" className="inline-flex items-center gap-1.5 text-[15px] font-bold text-navy-mute hover:text-navy"><ArrowLeft size={16} aria-hidden /> Dashboard</Link>
+          <Link to={backTo} className="inline-flex items-center gap-1.5 text-[15px] font-bold text-navy-mute hover:text-navy"><ArrowLeft size={16} aria-hidden /> Back</Link>
           <h1 className="mt-6 text-3xl font-bold">How confident are you that you can solve problems on {topicName.toLowerCase()}?</h1>
           <p className="mt-2 text-navy-mute">Be honest: you'll compare this with how you actually do. It stays on this device.</p>
           <div className="mt-6 grid grid-cols-5 gap-2" role="radiogroup" aria-label="Confidence from 1 to 5">
@@ -79,12 +89,12 @@ export default function Train() {
       )}
 
       {stage === "round" && (
-        <RoundPlayer key={`${session}-${round.id}`} pack={pack} round={round} mode="home" onNext={() => setStage("yourturn")} />
+        <RoundPlayer key={`${session}-${round.id}`} pack={pack} round={round} mode="home" onNext={() => setStage("yourturn")} backTo={backTo} />
       )}
 
       {stage === "yourturn" && (
         <div className="mx-auto max-w-2xl">
-          <YourTurn key={`${session}-${exercise.id}`} exercise={exercise} onDone={async () => { await reload(); setStage("summary"); }} />
+          <YourTurn key={`${session}-${exercise.id}`} exercise={exercise} sources={sources} onDone={async () => { await reload(); setStage("summary"); }} />
         </div>
       )}
 
@@ -94,7 +104,7 @@ export default function Train() {
           <ReadinessCard r={readiness(pack, history, topic)} />
           <div className="flex flex-wrap gap-3">
             <button className="btn-primary" onClick={() => { setSession((s) => s + 1); setStage("round"); }}>Train this topic again</button>
-            <Link to="/student" className="btn-ghost">Back to dashboard</Link>
+            <Link to={backTo} className="btn-ghost">{custom ? "Back to this pack" : "Back to dashboard"}</Link>
           </div>
         </div>
       )}

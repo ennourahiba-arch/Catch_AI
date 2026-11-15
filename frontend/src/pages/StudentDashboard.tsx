@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Play, Users } from "lucide-react";
+import { FileUp, Play, Users } from "lucide-react";
 import ReadinessCard from "../components/ReadinessCard";
 import OfflineStatus from "../components/OfflineStatus";
 import { ErrorState, Loading } from "../components/States";
 import { usePack } from "../components/usePack";
 import { readiness } from "../lib/readiness";
-import { clearAll, getKV, loadHistory, setKV, type History } from "../lib/storage";
+import { clearAll, getKV, listPacks, loadHistory, setKV, type History } from "../lib/storage";
+import { asPack, type CustomPack } from "../lib/types";
 import type { TopicId } from "../lib/types";
 
 export default function StudentDashboard() {
@@ -15,11 +16,13 @@ export default function StudentDashboard() {
   const [nickname, setNickname] = useState<string | null | undefined>(undefined);
   const [lastTopic, setLastTopic] = useState<TopicId | undefined>(undefined);
   const [draft, setDraft] = useState("");
+  const [mine, setMine] = useState<CustomPack[]>([]);
 
   const refresh = () => {
     loadHistory().then(setHistory);
     getKV<string>("nickname").then((n) => setNickname(n ?? null));
     getKV<TopicId>("lastTopic").then(setLastTopic);
+    listPacks().then(setMine);
   };
   useEffect(refresh, []);
 
@@ -28,7 +31,7 @@ export default function StudentDashboard() {
 
   const ready = pack.topics.map((t) => readiness(pack, history, t.id));
   const recommended = ready.find((r) => r.score === null || r.score < 80)?.topic ?? pack.topics[0].id;
-  const continueTopic = lastTopic ?? recommended;
+  const continueTopic = lastTopic && pack.topics.some((t) => t.id === lastTopic) ? lastTopic : recommended;
   const anything = history.attempts.length + history.exercises.length > 0;
   const rated = ready.filter((r) => r.confidence !== null);
 
@@ -65,7 +68,31 @@ export default function StudentDashboard() {
         </div>
       )}
 
-      <h2 className="mt-12 text-xl font-bold">Choose a topic</h2>
+      <section className="mt-12">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-bold">Your own courses</h2>
+            <p className="text-[15px] text-navy-mute">Any subject: upload your course material and past exams, then train on a quiz, a written exam or an oral exam.</p>
+          </div>
+          <Link to="/create" className="btn-violet"><FileUp size={17} aria-hidden /> Upload course material</Link>
+        </div>
+        {mine.length > 0 && (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {mine.map((p) => {
+              const r = readiness(asPack(p), history, p.id);
+              return (
+                <Link key={p.id} to={`/mine/${p.id}`} className="rounded-xl border-2 border-line bg-white p-5 hover:border-navy">
+                  <p className="text-sm font-bold text-violet-ink">{p.format === "quiz" ? "Quiz" : p.format === "written" ? "Written exam" : "Oral exam"}{p.generator.test_mode && " (test mode)"}</p>
+                  <h3 className="mt-0.5 text-lg font-bold">{p.title}</h3>
+                  <p className="mt-1 text-[15px] text-navy-mute">{r.score !== null ? `Readiness ${r.score}%` : p.format === "oral" ? "Open to practise" : `${p.rounds.length} rounds, ${p.exercises.length} practice questions`}</p>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <h2 className="mt-12 text-xl font-bold">Calculus 1: verified pack</h2>
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {ready.map((r) => {
           const levels = [...new Set([...pack.rounds, ...pack.exercises].filter((x) => x.topic === r.topic).map((x) => x.difficulty))].sort();

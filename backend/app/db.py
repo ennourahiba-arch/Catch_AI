@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS rooms (
   code TEXT PRIMARY KEY,
   host_hash TEXT NOT NULL,
   round_id TEXT NOT NULL,
+  round_json TEXT,                 -- an approved round from uploaded material, if any
   status TEXT NOT NULL,            -- lobby | running | finished
   duration_s INTEGER NOT NULL,
   created_ms INTEGER NOT NULL,
@@ -68,6 +69,9 @@ def conn() -> sqlite3.Connection:
         _conn.row_factory = sqlite3.Row
         _conn.execute("PRAGMA foreign_keys = ON")
         _conn.executescript(SCHEMA)
+        cols = {r[1] for r in _conn.execute("PRAGMA table_info(rooms)")}
+        if "round_json" not in cols:  # databases created before custom rounds existed
+            _conn.execute("ALTER TABLE rooms ADD COLUMN round_json TEXT")
     return _conn
 
 
@@ -90,14 +94,14 @@ def ex(sql: str, args: tuple = ()) -> sqlite3.Cursor:
 
 # --- rooms -----------------------------------------------------------------
 
-def create_room(round_id: str, duration_s: int) -> tuple[str, str]:
+def create_room(round_id: str, duration_s: int, round_json: str | None = None) -> tuple[str, str]:
     host_token = secrets.token_urlsafe(24)
     for _ in range(20):
         code = "".join(secrets.choice(CODE_ALPHABET) for _ in range(5))
         try:
             ex(
-                "INSERT INTO rooms (code, host_hash, round_id, status, duration_s, created_ms) VALUES (?,?,?,?,?,?)",
-                (code, hash_token(host_token), round_id, "lobby", duration_s, now_ms()),
+                "INSERT INTO rooms (code, host_hash, round_id, round_json, status, duration_s, created_ms) VALUES (?,?,?,?,?,?,?)",
+                (code, hash_token(host_token), round_id, round_json, "lobby", duration_s, now_ms()),
             )
             return code, host_token
         except sqlite3.IntegrityError:

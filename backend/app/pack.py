@@ -31,9 +31,13 @@ def public_round(r: dict[str, Any]) -> dict[str, Any]:
         "topic": r["topic"],
         "difficulty": r["difficulty"],
         "problem_statement": r["problem_statement"],
-        "steps": [{"n": s["n"], "text": s["text"], "latex": s["latex"]} for s in r["steps"]],
+        "steps": [{"n": s["n"], "text": s["text"], "latex": s.get("latex", ""), "detail": s.get("detail", "")} for s in r["steps"]],
         "pack_version": r["pack_version"],
     }
+
+
+def why_labels(r: dict[str, Any]) -> dict[str, str]:
+    return {**load_pack()["misconceptions"], **{w["id"]: w["label"] for w in r.get("why_options", [])}}
 
 
 def options_view(r: dict[str, Any]) -> dict[str, Any]:
@@ -47,18 +51,20 @@ def options_view(r: dict[str, Any]) -> dict[str, Any]:
 
 def reveal_view(r: dict[str, Any]) -> dict[str, Any]:
     """The full verified answer, sent to everyone once the round has finished."""
-    pack = load_pack()
     correct_fix = next((o for o in r["fix_options"] if o["id"] == r["correct_fix"]), None)
     return {
         "is_fully_correct": r["is_fully_correct"],
         "first_incorrect_step": r["first_incorrect_step"],
         "correct_fix": r["correct_fix"],
         "correct_fix_latex": correct_fix["latex"] if correct_fix else None,
+        "correct_fix_text": correct_fix["text"] if correct_fix else None,
         "correct_why": r["correct_why"],
-        "correct_why_label": pack["misconceptions"].get(r["correct_why"] or "", None),
+        "correct_why_label": why_labels(r).get(r["correct_why"] or "", None),
         "correct_solution": r["correct_solution"],
-        "verified_answer": {"latex": r["verified_answer"]["latex"]},
+        "verified_answer": {"latex": r["verified_answer"].get("latex", ""), "text": r["verified_answer"].get("text", "")},
         "key_lesson": r["key_lesson"],
         "checker": r["verification_status"]["checker"],
         "claims_checked": r["verification_status"]["claims_checked"],
+        "provenance": r.get("source_provenance", {}).get("method", "template"),
+        "provenance_text": r.get("source_provenance", {}).get("description", ""),
     }
