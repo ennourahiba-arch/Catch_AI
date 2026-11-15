@@ -340,7 +340,7 @@ async def independent_check(items: list[dict[str, Any]], passages: list[dict[str
     if not items:
         return set()
     system, user = check_prompt(items, passages)
-    data = await llm.complete_json(system, user, temperature=0.0)
+    data = await llm.complete_json(system, user, temperature=0.0, max_tokens=16000)
     results = data.get("results", []) if isinstance(data, dict) else []
     return {str(r.get("id")) for r in results if isinstance(r, dict) and r.get("ok") is True}
 
@@ -439,7 +439,8 @@ async def generate(fmt: Format, passages: list[dict[str, Any]], past_exams: str,
     pack_id = "u-" + uuid.uuid4().hex[:10]
     prompt = {"quiz": quiz_prompt, "written": written_prompt, "oral": oral_prompt}[fmt]
     system, user = prompt(passages, past_exams, n)
-    data = await llm.complete_json(system, user, temperature=0.5)
+    # Room for long packs, including "thinking" tokens on models that count them.
+    data = await llm.complete_json(system, user, temperature=0.5, max_tokens=32000)
     if not isinstance(data, dict):
         raise GenerationError("The AI's reply wasn't usable. Try again.")
     title = (str(data.get("title") or title_hint or "My course")).strip()[:80]

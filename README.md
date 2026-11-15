@@ -157,7 +157,7 @@ python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements-dev.txt
 uvicorn app.main:app --reload --port 8000
-pytest                           # 30 tests
+pytest                           # 34 tests
 ```
 
 With no `VITE_API_URL` set, the frontend talks to `http://localhost:8000`. To try several teams on one computer, open extra browser windows in private/incognito mode: each one counts as a separate team.
@@ -220,6 +220,8 @@ In Render → your service → **Environment**, add:
   On the free tier Google may use what you send to improve its products, and the app tells uploaders this.
 - Optional: `ACCESS_CODE` = any word, so only people you give it to can use the AI (protects your quota).
 - Optional: `LLM_MODEL`, if the default model name stops working (copy a current one from AI Studio).
+- Optional: `LLM_FALLBACK_MODEL`, a lighter model (e.g. a Flash Lite one) used automatically when the main
+  model is overloaded. Busy responses (HTTP 429/5xx) are retried twice before switching.
 
 Save, and Render restarts the server. Check `https://<your-render-url>/api/ai/status`: `"enabled": true`.
 To use Claude instead, set `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY` (from console.anthropic.com).
