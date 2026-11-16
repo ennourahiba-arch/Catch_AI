@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { pickSession, readiness } from "./readiness";
+import { translate } from "../i18n";
 import type { History } from "./storage";
 import type { Pack } from "./types";
 
@@ -22,8 +23,9 @@ describe("readiness", () => {
     };
     const r = readiness(pack, h, "chain-rule");
     expect(r.score).toBe(33);
-    expect(r.message).toContain("missed 2 of your last 3");
-    expect(r.next).toContain("forgot the inner derivative");
+    expect(translate("en", r.message!.key, r.message!.params)).toContain("missed 2 of your last 3");
+    expect(translate("en", r.next.key, r.next.params)).toContain("forgot the inner derivative");
+    expect(translate("fr", r.next.key, r.next.params)).not.toBe(translate("en", r.next.key, r.next.params));
   });
 });
 

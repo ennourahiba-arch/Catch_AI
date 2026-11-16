@@ -8,15 +8,17 @@ import { api } from "../lib/api";
 import { addExerciseAttempt } from "../lib/storage";
 import { gradeBlank, gradeMatch, gradeMulti, shuffled } from "../lib/grading";
 import type { Exercise, SolutionLine } from "../lib/types";
+import { useT } from "../i18n";
 
 interface CardProps { exercise: Exercise; index: number; total: number; onNext: () => void; nextLabel: string; sources?: string[] }
 
 /** One practice question, in the format of the exam. */
 export default function QuestionCard({ exercise, index, total, onNext, nextLabel, sources }: CardProps) {
+  const { t } = useT();
   const header = (
     <div className="flex items-baseline justify-between gap-3">
-      <p className="font-bold text-violet-ink">Question {index + 1} of {total}</p>
-      <p className="text-sm text-navy-mute">Difficulty {exercise.difficulty} of 3</p>
+      <p className="font-bold text-violet-ink">{t("Question {i} of {total}", { i: index + 1, total })}</p>
+      <p className="text-sm text-navy-mute">{t("Difficulty {d} of 3", { d: exercise.difficulty })}</p>
     </div>
   );
   const p = { exercise, onDone: onNext, header, nextLabel };
@@ -29,10 +31,11 @@ export default function QuestionCard({ exercise, index, total, onNext, nextLabel
   return <MathYourTurn {...p} />;
 }
 
-export function WorkedSolution({ lines, title = "Worked solution" }: { lines: SolutionLine[]; title?: string }) {
+export function WorkedSolution({ lines, title }: { lines: SolutionLine[]; title?: string }) {
+  const { t } = useT();
   return (
     <section className="rounded-xl border border-line bg-white p-5">
-      <h2 className="text-lg font-bold">{title}</h2>
+      <h2 className="text-lg font-bold">{title ?? t("Worked solution")}</h2>
       <ol className="mt-3 grid gap-3">
         {lines.map((st, i) => (
           <li key={i} className="flex gap-3">
@@ -79,6 +82,7 @@ function useRecorder(exercise: Exercise) {
 type BodyProps = { exercise: Exercise; onDone: () => void; header: React.ReactNode; nextLabel: string };
 
 function McqQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
+  const { t } = useT();
   const correct = (exercise.answer as { kind: "mcq"; correct: number }).correct;
   const opts = (exercise.options ?? []).map((o, i) => ({ id: String(i), text: `${"ABCD"[i]}) ${o}` }));
   const [pick, setPick] = useState<string | null>(null);
@@ -101,20 +105,20 @@ function McqQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
       <section className="rounded-xl border border-line bg-white p-5"><RichText text={exercise.prompt} className="text-lg" /></section>
       {done === null ? (
         <>
-          {wrong.length > 0 && <Verdict ok={false}><b>Not that one.</b> One more attempt.</Verdict>}
-          <OptionList legend="Answer options" options={opts.filter((o) => !wrong.includes(o.id))} selected={pick} onSelect={setPick} />
+          {wrong.length > 0 && <Verdict ok={false}><b>{t("Not that one.")}</b> {t("One more attempt.")}</Verdict>}
+          <OptionList legend={t("Answer options")} options={opts.filter((o) => !wrong.includes(o.id))} selected={pick} onSelect={setPick} />
           {wrong.length > 0 && (hint
-            ? <p className="flex gap-2"><Lightbulb size={18} className="mt-0.5 shrink-0 text-violet-ink" aria-hidden /><span><b>Hint.</b> {exercise.hint}</span></p>
-            : <button className="justify-self-start font-bold text-violet-ink underline decoration-2 underline-offset-4" onClick={() => setHint(true)}>Need a hint?</button>)}
+            ? <p className="flex gap-2"><Lightbulb size={18} className="mt-0.5 shrink-0 text-violet-ink" aria-hidden /><span><b>{t("Hint.")}</b> {exercise.hint}</span></p>
+            : <button className="justify-self-start font-bold text-violet-ink underline decoration-2 underline-offset-4" onClick={() => setHint(true)}>{t("Need a hint?")}</button>)}
           <div className="flex flex-wrap gap-3">
-            <button className="btn-primary" disabled={pick === null} onClick={submit}>Check my answer</button>
-            <button className="btn-ghost" onClick={() => { setDone(false); record(false, wrong.length, hint); }}>I'm stuck, show the answer</button>
+            <button className="btn-primary" disabled={pick === null} onClick={submit}>{t("Check my answer")}</button>
+            <button className="btn-ghost" onClick={() => { setDone(false); record(false, wrong.length, hint); }}>{t("I'm stuck, show the answer")}</button>
           </div>
         </>
       ) : (
         <>
-          <Verdict ok={done}>{done ? <><b>Correct{wrong.length === 0 ? ", first try" : ""}.</b></> : <><b>The answer is {exercise.answer_text}.</b></>}</Verdict>
-          <WorkedSolution lines={exercise.solution} title="Why" />
+          <Verdict ok={done}>{done ? <b>{wrong.length === 0 ? t("Correct, first try.") : t("Correct.")}</b> : <b>{t("The answer is {answer}.", { answer: exercise.answer_text ?? "" })}</b>}</Verdict>
+          <WorkedSolution lines={exercise.solution} title={t("Why")} />
           <button className="btn-primary justify-self-start" onClick={onDone}>{nextLabel}</button>
         </>
       )}
@@ -123,6 +127,7 @@ function McqQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
 }
 
 function OpenQuestion({ exercise, onDone, header, nextLabel, sources }: BodyProps & { sources: string[] }) {
+  const { t } = useT();
   const a = exercise.answer as { kind: "open"; key_points: string[]; model_answer: string; problem?: boolean; final_answer?: string | null };
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -153,54 +158,54 @@ function OpenQuestion({ exercise, onDone, header, nextLabel, sources }: BodyProp
       {!result ? (
         <>
           <label className="grid gap-1.5">
-            <span className="font-bold">Your answer</span>
+            <span className="font-bold">{t("Your answer")}</span>
             <textarea value={text} onChange={(e) => setText(e.target.value.slice(0, 5000))} rows={8}
               className="rounded-xl border border-line bg-white p-4 outline-none focus:border-violet" />
           </label>
           {err && (
             <div className="rounded-lg bg-paper p-4 ring-1 ring-line" role="status">
-              <p><b>AI grading isn't available right now.</b> {err}</p>
-              <p className="mt-2">You can compare with the model answer and mark yourself instead:</p>
+              <p><b>{t("AI grading isn't available right now.")}</b> {t(err)}</p>
+              <p className="mt-2">{t("You can compare with the model answer and mark yourself instead:")}</p>
               <p className="mt-2 rounded-md bg-white p-3"><RichText text={a.model_answer} /></p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <button className="btn-ghost" onClick={() => selfMark("correct")}>I got it</button>
-                <button className="btn-ghost" onClick={() => selfMark("partial")}>Partly</button>
-                <button className="btn-ghost" onClick={() => selfMark("incorrect")}>Not yet</button>
+                <button className="btn-ghost" onClick={() => selfMark("correct")}>{t("I got it")}</button>
+                <button className="btn-ghost" onClick={() => selfMark("partial")}>{t("Partly")}</button>
+                <button className="btn-ghost" onClick={() => selfMark("incorrect")}>{t("Not yet")}</button>
               </div>
             </div>
           )}
           <div className="flex flex-wrap gap-3">
             <button className="btn-primary" disabled={!text.trim() || busy} onClick={gradeWithAI}>
-              {busy && <Loader2 size={17} className="animate-spin" aria-hidden />} Grade my answer
+              {busy && <Loader2 size={17} className="animate-spin" aria-hidden />} {t("Grade my answer")}
             </button>
-            <button className="btn-ghost" onClick={() => selfMark("incorrect")}>I'm stuck, show the answer</button>
+            <button className="btn-ghost" onClick={() => selfMark("incorrect")}>{t("I'm stuck, show the answer")}</button>
           </div>
-          <p className="text-sm text-navy-mute">Written answers are graded by AI against your course material, which needs an internet connection.</p>
+          <p className="text-sm text-navy-mute">{t("Written answers are graded by AI against your course material, which needs an internet connection.")}</p>
         </>
       ) : (
         <>
           <Verdict ok={result.verdict === "correct"}>
-            <b>{result.verdict === "correct" ? "Full marks." : result.verdict === "partial" ? "Partly there." : "Not yet."}</b>{" "}
-            {result.self ? "You marked this yourself." : result.feedback}
+            <b>{result.verdict === "correct" ? t("Full marks.") : result.verdict === "partial" ? t("Partly there.") : t("Not yet.")}</b>{" "}
+            {result.self ? t("You marked this yourself.") : result.feedback}
           </Verdict>
           <section className="rounded-xl border border-line bg-white p-5">
             <h2 className="text-lg font-bold">
-              What a full answer contains{!result.self && a.key_points.length > 1 && <span className="ml-2 font-normal text-navy-mute">({result.covered.length} of {a.key_points.length} marks)</span>}
+              {t("What a full answer contains")}{!result.self && a.key_points.length > 1 && <span className="ml-2 font-normal text-navy-mute">{t("({right} of {total} marks)", { right: result.covered.length, total: a.key_points.length })}</span>}
             </h2>
             <ul className="mt-2 grid gap-1.5">
               {a.key_points.map((k, i) => (
                 <li key={i} className="flex gap-2">
                   {result.self ? <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-navy-mute" aria-hidden />
-                    : result.covered.includes(i) ? <Check size={18} className="mt-0.5 shrink-0 text-teal-ink" aria-label="covered" />
-                    : <X size={18} className="mt-0.5 shrink-0 text-coral-ink" aria-label="missing" />}
+                    : result.covered.includes(i) ? <Check size={18} className="mt-0.5 shrink-0 text-teal-ink" aria-label={t("covered")} />
+                    : <X size={18} className="mt-0.5 shrink-0 text-coral-ink" aria-label={t("missing")} />}
                   <RichText text={k} />
                 </li>
               ))}
             </ul>
           </section>
-          <WorkedSolution lines={exercise.solution} title="Model answer" />
-          {a.problem && <p className="text-sm text-navy-mute">The model answer to this problem was computed by AI and solved a second time independently to check it. If something looks off, trust your course.</p>}
-          {!result.self && <p className="text-sm text-navy-mute">Graded by AI against your course material. It can make mistakes: check the model answer.</p>}
+          <WorkedSolution lines={exercise.solution} title={t("Model answer")} />
+          {a.problem && <p className="text-sm text-navy-mute">{t("The model answer to this problem was computed by AI and solved a second time independently to check it. If something looks off, trust your course.")}</p>}
+          {!result.self && <p className="text-sm text-navy-mute">{t("Graded by AI against your course material. It can make mistakes: check the model answer.")}</p>}
           <button className="btn-primary justify-self-start" onClick={onDone}>{nextLabel}</button>
         </>
       )}
@@ -215,22 +220,25 @@ function Prompt({ text }: { text: string }) {
 }
 
 function HintLine({ exercise, shown, onShow }: { exercise: Exercise; shown: boolean; onShow: () => void }) {
+  const { t } = useT();
   return shown
-    ? <p className="flex gap-2"><Lightbulb size={18} className="mt-0.5 shrink-0 text-violet-ink" aria-hidden /><span><b>Hint.</b> {exercise.hint}</span></p>
-    : <button className="justify-self-start font-bold text-violet-ink underline decoration-2 underline-offset-4" onClick={onShow}>Need a hint?</button>;
+    ? <p className="flex gap-2"><Lightbulb size={18} className="mt-0.5 shrink-0 text-violet-ink" aria-hidden /><span><b>{t("Hint.")}</b> {exercise.hint}</span></p>
+    : <button className="justify-self-start font-bold text-violet-ink underline decoration-2 underline-offset-4" onClick={onShow}>{t("Need a hint?")}</button>;
 }
 
 function Done({ ok, children, exercise, onDone, nextLabel }: { ok: boolean; children: React.ReactNode; exercise: Exercise; onDone: () => void; nextLabel: string }) {
+  const { t } = useT();
   return (
     <>
       <Verdict ok={ok}>{children}</Verdict>
-      <WorkedSolution lines={exercise.solution} title="Why" />
+      <WorkedSolution lines={exercise.solution} title={t("Why")} />
       <button className="btn-primary justify-self-start" onClick={onDone}>{nextLabel}</button>
     </>
   );
 }
 
 function MultiQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
+  const { t } = useT();
   const correct = (exercise.answer as { kind: "multi"; correct: number[] }).correct;
   const opts = exercise.options ?? [];
   const [sel, setSel] = useState<number[]>([]);
@@ -249,14 +257,15 @@ function MultiQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
       const wrongPick = sel.find((i) => !correct.includes(i));
       record(g.exact, n, hint, g.exact && n === 1, g.exact ? null : wrongPick !== undefined ? exercise.labels?.[wrongPick] ?? null : null);
     } else {
-      setFeedback(`Not quite: ${g.right} of your ${sel.length} ${sel.length === 1 ? "choice is" : "choices are"} right${g.missed ? `, and ${g.missed === 1 ? "one correct option is" : `${g.missed} correct options are`} missing` : ""}. One more try.`);
+      setFeedback(t("Not quite: {right} of your {n} choice is right.|Not quite: {right} of your {n} choices are right.", { right: g.right, n: sel.length })
+        + (g.missed ? " " + t("{n} correct option is missing.|{n} correct options are missing.", { n: g.missed }) : "") + " " + t("One more try."));
     }
   }
   return (
     <div className="grid gap-5">
       {header}
       <Prompt text={exercise.prompt} />
-      <p className="text-[15px] text-navy-mute">Select every correct answer.</p>
+      <p className="text-[15px] text-navy-mute">{t("Select every correct answer.")}</p>
       <ul className="grid gap-2.5">
         {opts.map((o, i) => {
           const on = sel.includes(i);
@@ -279,15 +288,15 @@ function MultiQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
       </ul>
       {done ? (
         <Done ok={done.exact} exercise={exercise} onDone={onDone} nextLabel={nextLabel}>
-          {done.exact ? <b>All correct{tries === 1 ? ", first try" : ""}.</b> : <><b>The correct answers are {exercise.answer_text}.</b> You got {Math.round(done.fraction * 100)}% of the credit.</>}
+          {done.exact ? <b>{tries === 1 ? t("All correct, first try.") : t("All correct.")}</b> : <><b>{t("The correct answers are {answer}.", { answer: exercise.answer_text ?? "" })}</b> {t("You got {pct}% of the credit.", { pct: Math.round(done.fraction * 100) })}</>}
         </Done>
       ) : (
         <>
           {feedback && <Verdict ok={false}>{feedback}</Verdict>}
           {tries > 0 && <HintLine exercise={exercise} shown={hint} onShow={() => setHint(true)} />}
           <div className="flex flex-wrap gap-3">
-            <button className="btn-primary" disabled={!sel.length} onClick={check}>Check my answer</button>
-            <button className="btn-ghost" onClick={() => { setDone(gradeMulti([], correct)); record(false, tries, hint); }}>I'm stuck, show the answer</button>
+            <button className="btn-primary" disabled={!sel.length} onClick={check}>{t("Check my answer")}</button>
+            <button className="btn-ghost" onClick={() => { setDone(gradeMulti([], correct)); record(false, tries, hint); }}>{t("I'm stuck, show the answer")}</button>
           </div>
         </>
       )}
@@ -296,6 +305,7 @@ function MultiQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
 }
 
 function TFQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
+  const { t } = useT();
   const value = (exercise.answer as { kind: "tf"; value: boolean }).value;
   const [pick, setPick] = useState<boolean | null>(null);
   const record = useRecorder(exercise);
@@ -309,7 +319,7 @@ function TFQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
     <div className="grid gap-5">
       {header}
       <Prompt text={exercise.prompt} />
-      <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="True or false">
+      <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label={t("True or false")}>
         {[true, false].map((v) => {
           const right = pick !== null && v === value;
           const wrong = pick === v && v !== value;
@@ -317,15 +327,15 @@ function TFQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
             <button key={String(v)} role="radio" aria-checked={pick === v} disabled={pick !== null} onClick={() => choose(v)}
               className={`min-h-[72px] rounded-xl border-2 font-display text-xl font-bold disabled:cursor-default
                 ${right ? "border-teal bg-teal-wash text-teal-ink" : wrong ? "border-coral bg-coral-wash text-coral-ink" : "border-line bg-white hover:border-navy"}`}>
-              {v ? "True" : "False"}
+              {v ? t("True") : t("False")}
             </button>
           );
         })}
       </div>
       {pick !== null && (
         <Done ok={pick === value} exercise={exercise} onDone={onDone} nextLabel={nextLabel}>
-          <b>{pick === value ? "Correct." : `It's ${value ? "true" : "false"}.`}</b>
-          {pick !== value && exercise.labels?.[pick ? 0 : 1] && <> A common trap: {exercise.labels[pick ? 0 : 1]!.toLowerCase()}.</>}
+          <b>{pick === value ? t("Correct.") : `It's ${value ? "true" : "false"}.`}</b>
+          {pick !== value && exercise.labels?.[pick ? 0 : 1] && <> {t("A common trap: {trap}.", { trap: exercise.labels[pick ? 0 : 1]!.toLowerCase() })}</>}
         </Done>
       )}
     </div>
@@ -333,6 +343,7 @@ function TFQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
 }
 
 function BlankQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
+  const { t } = useT();
   const accepted = (exercise.answer as { kind: "blank"; accepted: string[] }).accepted;
   const [before, after] = exercise.prompt.split("____");
   const [text, setText] = useState("");
@@ -360,27 +371,27 @@ function BlankQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
       {!done ? (
         <form onSubmit={check} className="grid gap-3">
           <label className="grid gap-1.5">
-            <span className="font-bold">The missing word or phrase</span>
+            <span className="font-bold">{t("The missing word or phrase")}</span>
             <input value={text} onChange={(e) => setText(e.target.value.slice(0, 200))} autoComplete="off" autoCapitalize="off"
               className="min-h-[52px] rounded-xl border border-line bg-white px-4 text-lg outline-none focus:border-violet" />
           </label>
-          {tries > 0 && <Verdict ok={false}><b>Not that.</b> One more try.</Verdict>}
+          {tries > 0 && <Verdict ok={false}><b>{t("Not that.")}</b> {t("One more try.")}</Verdict>}
           {tries > 0 && <HintLine exercise={exercise} shown={hint} onShow={() => setHint(true)} />}
           <div className="flex flex-wrap gap-3">
-            <button className="btn-primary" disabled={!text.trim()}>Check my answer</button>
-            <button type="button" className="btn-ghost" onClick={() => { setDone("wrong"); record(false, tries, hint); }}>I'm stuck, show the answer</button>
+            <button className="btn-primary" disabled={!text.trim()}>{t("Check my answer")}</button>
+            <button type="button" className="btn-ghost" onClick={() => { setDone("wrong"); record(false, tries, hint); }}>{t("I'm stuck, show the answer")}</button>
           </div>
         </form>
       ) : (
         <>
           <Done ok={done !== "wrong"} exercise={exercise} onDone={onDone} nextLabel={nextLabel}>
-            {done === "right" ? <b>Correct{tries === 1 ? ", first try" : ""}.</b>
-              : done === "self" ? <><b>Noted.</b> Your readiness still counts this one as missed, because it couldn't be checked exactly.</>
-              : <><b>The answer is "{accepted[0]}".</b>{accepted.length > 1 && <> Also accepted: {accepted.slice(1).join(", ")}.</>}</>}
+            {done === "right" ? <b>{tries === 1 ? t("Correct, first try.") : t("Correct.")}</b>
+              : done === "self" ? <><b>{t("Noted.")}</b> {t("Your readiness still counts this one as missed, because it couldn't be checked exactly.")}</>
+              : <><b>{t("The answer is “{answer}”.", { answer: accepted[0] })}</b>{accepted.length > 1 && <> {t("Also accepted: {list}.", { list: accepted.slice(1).join(", ") })}</>}</>}
           </Done>
           {done === "wrong" && text.trim() && (
             <button className="justify-self-start text-[15px] font-bold text-navy-mute underline underline-offset-4"
-              onClick={() => { setDone("self"); }}>My answer "{text.trim()}" means the same thing</button>
+              onClick={() => { setDone("self"); }}>{t("My answer “{answer}” means the same thing", { answer: text.trim() })}</button>
           )}
         </>
       )}
@@ -389,6 +400,7 @@ function BlankQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
 }
 
 function MatchQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
+  const { t } = useT();
   const pairs = (exercise.answer as { kind: "match"; pairs: { left: string; right: string }[] }).pairs;
   const rights = shuffled(pairs.map((p) => p.right), exercise.id);
   const [chosen, setChosen] = useState<(string | null)[]>(pairs.map(() => null));
@@ -401,7 +413,7 @@ function MatchQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
     const n = tries + 1;
     setTries(n);
     if (g.exact || n >= 2) { setDone(g); record(g.exact, n, false); }
-    else setFeedback(`${g.right} of ${g.total} are right. One more try.`);
+    else setFeedback(t("{right} of {total} are right.", { right: g.right, total: g.total }) + " " + t("One more try."));
   }
   return (
     <div className="grid gap-5">
@@ -419,8 +431,8 @@ function MatchQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
                 </span>
               ) : (
                 <select value={chosen[i] ?? ""} onChange={(e) => setChosen(chosen.map((c, k) => (k === i ? e.target.value || null : c)))}
-                  aria-label={`Match for ${p.left}`} className="min-h-[48px] w-full rounded-lg border border-line bg-white px-3">
-                  <option value="">Choose…</option>
+                  aria-label={t("Match for {item}", { item: p.left })} className="min-h-[48px] w-full rounded-lg border border-line bg-white px-3">
+                  <option value="">{t("Choose…")}</option>
                   {rights.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
               )}
@@ -430,14 +442,14 @@ function MatchQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
       </ul>
       {done ? (
         <Done ok={done.exact} exercise={exercise} onDone={onDone} nextLabel={nextLabel}>
-          <b>{done.exact ? `All matched${tries === 1 ? ", first try" : ""}.` : `${done.right} of ${done.total} matched.`}</b>
+          <b>{done.exact ? (tries === 1 ? t("All matched, first try.") : t("All matched.")) : t("{right} of {total} matched.", { right: done.right, total: done.total })}</b>
         </Done>
       ) : (
         <>
           {feedback && <Verdict ok={false}>{feedback}</Verdict>}
           <div className="flex flex-wrap gap-3">
-            <button className="btn-primary" disabled={chosen.some((c) => !c)} onClick={check}>Check my answer</button>
-            <button className="btn-ghost" onClick={() => { setDone(gradeMatch(pairs.map(() => null), pairs)); record(false, tries, false); }}>I'm stuck, show the answer</button>
+            <button className="btn-primary" disabled={chosen.some((c) => !c)} onClick={check}>{t("Check my answer")}</button>
+            <button className="btn-ghost" onClick={() => { setDone(gradeMatch(pairs.map(() => null), pairs)); record(false, tries, false); }}>{t("I'm stuck, show the answer")}</button>
           </div>
         </>
       )}

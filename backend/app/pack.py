@@ -18,16 +18,20 @@ def get_exercise(eid: str) -> dict[str, Any] | None:
     return next((e for e in load_pack()["exercises"] if e["id"] == eid), None)
 
 
-def topic_name(topic: str) -> str:
-    return next((t["name"] for t in load_pack()["topics"] if t["id"] == topic), topic)
+def topic_name(topic: str, lang: str = "en") -> str:
+    t = next((t for t in load_pack()["topics"] if t["id"] == topic), None)
+    return (t.get("i18n", {}).get(lang) or t["name"]) if t else topic
 
 
-def calculus_question(e: dict[str, Any]) -> dict[str, Any]:
-    """A verified Calculus question in class-quiz form. Wrong options carry the mistake they come from."""
-    m = e["mcq"]
+def calculus_question(e: dict[str, Any], lang: str = "en") -> dict[str, Any]:
+    """A verified Calculus question in class-quiz form, in English, French or Italian.
+    Wrong options carry the mistake they come from."""
+    loc = e.get("i18n", {}).get(lang)
+    m = {**e["mcq"], **(loc["mcq"] if loc else {})}
+    solution = loc["solution"] if loc else e["solution"]
     return {
         "id": e["id"], "prompt": m["prompt"], "latex": e["latex"],
         "options": [{"text": "", "latex": o} for o in m["options"]],
-        "correct": m["correct"], "labels": m["labels"],
-        "solution": [{"text": s["text"], "latex": s.get("latex", "")} for s in e["solution"]],
+        "correct": e["mcq"]["correct"], "labels": m["labels"],
+        "solution": [{"text": s["text"], "latex": s.get("latex", "")} for s in solution],
     }

@@ -1,6 +1,7 @@
 import { Check, X } from "lucide-react";
 import Math from "./Math";
 import RichText from "./RichText";
+import { useT } from "../i18n";
 
 interface Opt { id: string; text?: string; latex?: string; label?: string }
 
@@ -14,6 +15,7 @@ export default function OptionList({
   reviewCorrect?: string | null;
   legend: string;
 }) {
+  const { t } = useT();
   const review = reviewCorrect !== undefined;
   return (
     <div role="radiogroup" aria-label={legend} className="grid gap-2.5">
@@ -41,8 +43,8 @@ export default function OptionList({
               {o.label && <span className="font-bold">{o.label}</span>}
               {o.latex ? <Math tex={o.latex} /> : o.text && !o.label ? <RichText text={o.text} /> : null}
             </span>
-            {isRight && <span className="sr-only">(correct answer)</span>}
-            {isWrongSel && <span className="sr-only">(your answer, incorrect)</span>}
+            {isRight && <span className="sr-only">{t("(correct answer)")}</span>}
+            {isWrongSel && <span className="sr-only">{t("(your answer, incorrect)")}</span>}
           </button>
         );
       })}

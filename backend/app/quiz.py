@@ -59,21 +59,24 @@ def summary(questions: list[dict[str, Any]], teams: list[dict[str, Any]]) -> dic
     return out
 
 
-def insights(per_q: list[dict[str, Any]], total: int) -> list[str]:
-    """Teaching takeaways, each computed from the actual answers."""
+def insights(per_q: list[dict[str, Any]], total: int) -> list[dict[str, Any]]:
+    """Teaching takeaways, each computed from the actual answers. Each is an English
+    message key plus values, so the app can show it in the viewer's language."""
     scored = [q for q in per_q if q["pct_correct"] is not None]
-    lines: list[str] = []
+    lines: list[dict[str, Any]] = []
     if not scored:
         return lines
     avg = round(sum(q["pct_correct"] for q in scored) / len(scored))
-    lines.append(f"On average, {avg}% of teams answered each question correctly.")
+    lines.append({"key": "On average, {pct}% of teams answered each question correctly.", "params": {"pct": avg}})
     hardest = min(scored, key=lambda q: q["pct_correct"])
     if hardest["pct_correct"] < 100:
-        lines.append(f"Hardest: question {hardest['index'] + 1}, answered correctly by {hardest['pct_correct']}% of teams.")
+        lines.append({"key": "Hardest: question {q}, answered correctly by {pct}% of teams.",
+                      "params": {"q": hardest["index"] + 1, "pct": hardest["pct_correct"]}})
     labels = Counter(q["top_wrong"]["label"] for q in scored if q.get("top_wrong") and q["top_wrong"].get("label"))
     if labels:
         label, n = labels.most_common(1)[0]
-        lines.append(f"Most common mistake: \u201c{label}\u201d" + (f" (top wrong answer in {n} questions)." if n > 1 else "."))
+        lines.append({"key": "Most common mistake: “{label}” (top wrong answer in {n} questions)." if n > 1 else "Most common mistake: “{label}”.",
+                      "params": {"label": label, "n": n}})
     return lines
 
 

@@ -57,7 +57,7 @@ def test_full_quiz_with_three_teams(client):
     assert out["status"] == "finished"
     sm = out["summary"]
     assert [t["score"] for t in sm["scoreboard"]] == [3, 2, 0]
-    assert sm["insights"][0].startswith("On average")
+    assert sm["insights"][0]["key"].startswith("On average") and sm["insights"][0]["params"]["pct"] >= 0
     team_view = c.get(f"/api/rooms/{code}/state", headers=teams[1]).json()
     assert team_view["you"]["score"] == 2 and len(team_view["you"]["history"]) == 3
 
@@ -135,3 +135,13 @@ def test_websocket_updates(client):
         first = ws.receive_json()
         join(c, code, "Listener")
         assert ws.receive_json()["version"] > first["version"]
+
+
+def test_calculus_quiz_in_french_and_italian(client):
+    for lang, word in (("fr", "maximum absolu"), ("it", "massimo assoluto")):
+        r = client.post("/api/rooms", json={"exercise_ids": ["yt-int-01"], "lang": lang})
+        code, host = r.json()["code"], {"X-Host-Token": r.json()["host_token"]}
+        join(client, code, "Équipe")
+        s = client.post(f"/api/rooms/{code}/start", headers=host).json()
+        assert word in s["question"]["prompt"] and word in json.dumps(s["question"]["options"], ensure_ascii=False)
+        assert s["title"] in ("Max et min sur un intervalle fermé", "Max e min su intervalli chiusi")

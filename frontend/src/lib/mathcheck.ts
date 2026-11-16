@@ -23,7 +23,7 @@ export class Q {
   static parse(s: string): Q {
     if (s.length > 30) throw new CheckError("unsupported", "That number is too long to check.");
     const m = /^(-?)(\d*)(?:\.(\d*))?$/.exec(s);
-    if (!m || (m[2] === "" && !m[3])) throw new CheckError("syntax", `Couldn't read the number "${s}".`);
+    if (!m || (m[2] === "" && !m[3])) throw new CheckError("syntax", "Couldn't read the number “{s}”.", { s });
     const frac = m[3] ?? "";
     const n = BigInt((m[2] || "0") + frac) * (m[1] ? -1n : 1n);
     return new Q(n, 10n ** BigInt(frac.length));
@@ -52,7 +52,8 @@ function gcd(a: bigint, b: bigint): bigint {
 }
 
 export class CheckError extends Error {
-  constructor(public kind: "syntax" | "unsupported", message: string) { super(message); }
+  /** message is an English key; params fill its {placeholders} when it's translated for display. */
+  constructor(public kind: "syntax" | "unsupported", message: string, public params?: Record<string, string>) { super(message); }
 }
 
 // ---------- Laurent polynomials: exponent -> coefficient ----------
@@ -143,10 +144,10 @@ function tokenize(input: string): Tok[] {
       while (j < s.length && /[a-zA-Z]/.test(s[j])) j++;
       const word = s.slice(i, j);
       if (word === "x") { out.push({ t: "x" }); i = j; continue; }
-      throw new CheckError("unsupported", `This checker works with polynomials and powers of x, so it can't verify "${word}". Write the answer without it.`);
+      throw new CheckError("unsupported", "This checker works with polynomials and powers of x, so it can't verify “{word}”. Write the answer without it.", { word });
     }
     if ("+-*/^()".includes(ch)) { out.push({ t: "op", v: ch }); i++; continue; }
-    throw new CheckError("syntax", `Unexpected character "${ch}".`);
+    throw new CheckError("syntax", "Unexpected character “{ch}”.", { ch });
   }
   // implicit multiplication: 3x, 2(x+1), x(x+1), (x+1)(x-1), (x+1)2 is not allowed
   const res: Tok[] = [];
@@ -166,7 +167,7 @@ class Parser {
   peek() { return this.toks[this.i]; }
   isOp(v: string) { const t = this.peek(); return t && t.t === "op" && t.v === v; }
   expect(v: string) {
-    if (!this.isOp(v)) throw new CheckError("syntax", v === ")" ? "A bracket is missing a closing )." : `Expected "${v}".`);
+    if (!this.isOp(v)) throw new CheckError("syntax", v === ")" ? "A bracket is missing a closing )." : "Expected “{v}”.", v === ")" ? undefined : { v });
     this.i++;
   }
   parse(): Poly {
@@ -212,7 +213,7 @@ class Parser {
     if (t.t === "num") { this.i++; return constant(Q.parse(t.v)); }
     if (t.t === "x") { this.i++; return new Map([[1, new Q(1n)]]); }
     if (t.v === "(") { this.i++; const p = this.expr(); this.expect(")"); return p; }
-    throw new CheckError("syntax", `Unexpected "${t.v}".`);
+    throw new CheckError("syntax", "Unexpected “{v}”.", { v: t.v });
   }
 }
 
@@ -245,11 +246,11 @@ export function polyLatex(p: Poly): string {
 // ---------- verdicts ----------
 export type Verdict =
   | { status: "correct" | "incorrect"; preview: string }
-  | { status: "syntax" | "unsupported"; message: string };
+  | { status: "syntax" | "unsupported"; message: string; params?: Record<string, string> };
 
 function guard<T>(fn: () => T): T | Verdict {
   try { return fn(); } catch (e) {
-    if (e instanceof CheckError) return { status: e.kind, message: e.message };
+    if (e instanceof CheckError) return { status: e.kind, message: e.message, params: e.params };
     return { status: "unsupported", message: "This answer couldn't be checked safely. Try writing it another way." };
   }
 }
@@ -266,7 +267,7 @@ export function parseNumbers(input: string): Q[] {
   if (!parts.length) throw new CheckError("syntax", "Type at least one value.");
   return parts.map((s) => {
     const p = parsePoly(s);
-    if (!isConst(p)) throw new CheckError("syntax", `"${s}" should be a number, not an expression in x.`);
+    if (!isConst(p)) throw new CheckError("syntax", "“{s}” should be a number, not an expression in x.", { s });
     return constValue(p);
   });
 }

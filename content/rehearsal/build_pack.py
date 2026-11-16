@@ -20,8 +20,9 @@ import sympy as sp
 
 from .common import TOPICS
 from .exercises import all_exercises, check_exercise, check_mcq, checker_vectors, public
+from .i18n import LANGS, localize_exercise, tr
 
-PACK_VERSION = "2.0.0"
+PACK_VERSION = "2.1.0"
 ROOT = Path(__file__).resolve().parents[2]
 OUT_DIR = ROOT / "content" / "packs"
 COPIES = [ROOT / "frontend" / "public" / "packs", ROOT / "backend" / "packs"]
@@ -33,13 +34,15 @@ def build() -> dict[str, Any]:
         check_exercise(e)  # raises: an unverified question must never ship
         check_mcq(e)
     pub = [{**public(e), "verification": {"checker": f"sympy {sp.__version__}", "status": "verified"}} for e in exercises]
+    for e in pub:
+        e["i18n"] = localize_exercise(e)  # raises if any text lacks a French or Italian translation
     body = json.dumps(pub, sort_keys=True, ensure_ascii=False)
     pack = {
         "pack_id": "calculus1",
         "subject": "Calculus 1",
         "pack_version": PACK_VERSION,
         "content_hash": hashlib.sha256(body.encode()).hexdigest()[:16],
-        "topics": [{"id": k, "name": v} for k, v in TOPICS.items()],
+        "topics": [{"id": k, "name": v, "i18n": {lang: tr(v, lang) for lang in LANGS}} for k, v in TOPICS.items()],
         "exercises": pub,
     }
     OUT_DIR.mkdir(parents=True, exist_ok=True)

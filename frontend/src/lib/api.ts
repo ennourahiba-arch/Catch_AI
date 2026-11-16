@@ -19,7 +19,7 @@ export interface QuizSummary {
   teams: number; min_teams: number; locked: boolean; total: number; sample?: boolean;
   questions?: { index: number; prompt: string; answered: number; pct_correct: number | null; top_wrong: QuestionResult["top_wrong"] | null }[];
   scoreboard?: { name: string; score: number }[];
-  insights?: string[];
+  insights?: { key: string; params?: Record<string, string | number> }[];
 }
 export interface RoomState {
   code: string; title: string; status: "lobby" | "question" | "reveal" | "finished";
@@ -99,9 +99,9 @@ export const api = {
   mockExam: (body: { passages: Passage[]; past_exams: string; parts: Partial<Record<string, number>> }) =>
     call<import("./types").CustomPack>("/api/mock-exam", { method: "POST", body }),
   // live class quiz
-  createQuiz: (body: { title?: string; exercise_ids?: string[]; questions?: QuizQuestionIn[]; seconds_per_question: number }) =>
+  createQuiz: (body: { title?: string; exercise_ids?: string[]; questions?: QuizQuestionIn[]; seconds_per_question: number; lang?: string }) =>
     call<{ code: string; host_token: string }>("/api/rooms", { method: "POST", body }),
-  createDuel: (body: { title?: string; player_name: string; exercise_ids?: string[]; questions?: QuizQuestionIn[]; seconds_per_question: number }) =>
+  createDuel: (body: { title?: string; player_name: string; exercise_ids?: string[]; questions?: QuizQuestionIn[]; seconds_per_question: number; lang?: string }) =>
     call<{ code: string; host_token: string; team_token: string; team_name: string }>("/api/rooms", { method: "POST", body: { ...body, mode: "duel" } }),
   join: (code: string, team_name: string) =>
     call<{ team_token: string; team_name: string; code: string }>(`/api/rooms/${code}/join`, { method: "POST", body: { team_name } }),

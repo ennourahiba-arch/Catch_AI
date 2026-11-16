@@ -4,6 +4,7 @@ import RichText from "./RichText";
 import { SourceQuote } from "./QuestionCard";
 import type { QuizOption, SolutionStep } from "../lib/api";
 import type { Conn } from "../lib/useRoom";
+import { useT } from "../i18n";
 
 export const LETTERS = "ABCD";
 
@@ -12,22 +13,24 @@ export function fmt(s: number) {
 }
 
 export function Timer({ left, big = false }: { left: number | null; big?: boolean }) {
+  const { t } = useT();
   if (left === null) return null;
   const urgent = left <= 10;
   return (
     <span className={`font-display font-extrabold tabular-nums ${big ? "text-6xl sm:text-7xl" : "text-2xl"} ${urgent ? "text-coral-ink" : "text-navy"}`}
-      role="timer" aria-label={`${left} seconds left`}>
+      role="timer" aria-label={t("{n} second left|{n} seconds left", { n: left })}>
       {fmt(left)}
     </span>
   );
 }
 
 export function ConnBadge({ conn }: { conn: Conn }) {
+  const { t } = useT();
   const map = {
-    connecting: { icon: RefreshCw, text: "Connecting", cls: "text-navy-mute" },
-    live: { icon: Radio, text: "Live", cls: "text-teal-ink" },
-    polling: { icon: RefreshCw, text: "Reconnecting, still updating", cls: "text-navy-mute" },
-    offline: { icon: WifiOff, text: "Can't reach the server", cls: "text-coral-ink" },
+    connecting: { icon: RefreshCw, text: t("Connecting"), cls: "text-navy-mute" },
+    live: { icon: Radio, text: t("Live"), cls: "text-teal-ink" },
+    polling: { icon: RefreshCw, text: t("Reconnecting, still updating"), cls: "text-navy-mute" },
+    offline: { icon: WifiOff, text: t("Can't reach the server"), cls: "text-coral-ink" },
   }[conn];
   const Icon = map.icon;
   return (
@@ -58,11 +61,12 @@ export function Bars({ rows, highlight }: { rows: { key: string; label: React.Re
   );
 }
 
-export function SolutionPanel({ steps, title = "Solution" }: { steps: SolutionStep[]; title?: string }) {
+export function SolutionPanel({ steps, title }: { steps: SolutionStep[]; title?: string }) {
+  const { t } = useT();
   if (!steps.length) return null;
   return (
     <section className="rounded-xl border border-line bg-white p-5">
-      <h3 className="text-lg font-bold">{title}</h3>
+      <h3 className="text-lg font-bold">{title ?? t("Solution")}</h3>
       <ol className="mt-3 grid gap-3">
         {steps.map((st, i) => (
           <li key={i} className="flex gap-3">

@@ -22,6 +22,7 @@ export function maxPoints(q: Exercise): number {
   return k === "multi" || k === "match" ? 2 : 1;
 }
 import { CourseMissing, useCourse } from "./Course";
+import { useT } from "../i18n";
 
 const MATERIAL_BUDGET = 85_000; // characters sent to the AI, shared fairly between the chosen lessons
 
@@ -95,6 +96,7 @@ function defaultParts(course: Course, minutes: number): Record<WrittenFormat, nu
 }
 
 function Setup({ course, onReady }: { course: Course; onReady: (e: ExamState) => void }) {
+  const { t } = useT();
   const ai = useAI();
   const prof = course.exam_profile;
   const [lessons, setLessons] = useState<string[]>(course.lessons.map((l) => l.id));
@@ -115,7 +117,7 @@ function Setup({ course, onReady }: { course: Course; onReady: (e: ExamState) =>
       const res = await api.mockExam({ passages, past_exams: course.past_exams?.text ?? "", parts: Object.fromEntries(EXAM_FORMATS.filter((f) => parts[f]).map((f) => [f, parts[f]])) });
       const tag = (e: Exercise) => ({ ...e, topic: lessonOf[e.source_ids?.[0] ?? ""] ?? lessons[0] });
       const questions = EXAM_FORMATS.flatMap((f) => res.exercises.filter((e) => e.format === f).map(tag));
-      if (!questions.length) throw new Error("No questions could be created. Try again.");
+      if (!questions.length) throw new Error(t("No questions could be created. Try again."));
       const now = Date.now();
       onReady({
         courseId: course.id, questions, minutes, started: now, deadline: now + minutes * 60_000, answers: {},
@@ -128,13 +130,13 @@ function Setup({ course, onReady }: { course: Course; onReady: (e: ExamState) =>
   return (
     <div className="mt-4 grid gap-6">
       <div>
-        <h1 className="text-3xl font-bold sm:text-4xl">Mock exam</h1>
-        <p className="mt-1 text-navy-soft">Timed, across your lessons, with no hints and no feedback until you hand it in.
-          {fromPast ? " The mix below copies your past exams; adjust it if needed." : " Add past exams to the course and the mix will copy your real exam."}</p>
+        <h1 className="text-3xl font-bold sm:text-4xl">{t("Mock exam")}</h1>
+        <p className="mt-1 text-navy-soft">{t("Timed, across your lessons, with no hints and no feedback until you hand it in.")}
+          {" "}{fromPast ? t("The mix below copies your past exams; adjust it if needed.") : t("Add past exams to the course and the mix will copy your real exam.")}</p>
       </div>
 
       <fieldset className="rounded-xl border border-line bg-white p-5">
-        <legend className="px-1 font-bold">Lessons included</legend>
+        <legend className="px-1 font-bold">{t("Lessons included")}</legend>
         <ul className="grid gap-2">
           {course.lessons.map((l) => (
             <li key={l.id}>
@@ -149,48 +151,48 @@ function Setup({ course, onReady }: { course: Course; onReady: (e: ExamState) =>
       </fieldset>
 
       <fieldset className="rounded-xl border border-line bg-white p-5">
-        <legend className="px-1 font-bold">Time and questions</legend>
-        <label className="inline-flex items-center gap-3"><span className="text-navy-soft">Time</span>
+        <legend className="px-1 font-bold">{t("Time and questions")}</legend>
+        <label className="inline-flex items-center gap-3"><span className="text-navy-soft">{t("Time")}</span>
           <select value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} className="min-h-[44px] rounded-lg border border-line bg-white px-3 font-bold">
-            {durations.map((d) => <option key={d} value={d}>{d} minutes</option>)}
+            {durations.map((d) => <option key={d} value={d}>{t("{n} minutes", { n: d })}</option>)}
           </select>
         </label>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {EXAM_FORMATS.map((f) => (
             <label key={f} className="flex items-center justify-between gap-3 rounded-lg bg-paper px-3 py-2">
-              <span>{FORMAT_INFO[f].name}</span>
+              <span>{t(FORMAT_INFO[f].name)}</span>
               <select value={parts[f]} onChange={(e) => setParts({ ...parts, [f]: Number(e.target.value) })} className="rounded-md border border-line bg-white px-2 py-1 font-bold">
                 {[...new Set([0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, parts[f]])].sort((a, b) => a - b).map((n) => <option key={n} value={n}>{n}</option>)}
               </select>
             </label>
           ))}
         </div>
-        <p className={`mt-3 text-[15px] ${total > MAX_TOTAL ? "font-bold text-coral-ink" : "text-navy-mute"}`}>{total} questions{total > MAX_TOTAL && `: the maximum is ${MAX_TOTAL}`}.</p>
+        <p className={`mt-3 text-[15px] ${total > MAX_TOTAL ? "font-bold text-coral-ink" : "text-navy-mute"}`}>{total > MAX_TOTAL ? t("{n} questions: the maximum is {max}.", { n: total, max: MAX_TOTAL }) : t("{n} question.|{n} questions.", { n: total })}</p>
       </fieldset>
 
-      {ai.status && !ai.status.enabled && <p className="rounded-lg bg-paper px-4 py-3 ring-1 ring-line">A mock exam is written by AI from your lessons, and no AI is set up on the server yet.</p>}
+      {ai.status && !ai.status.enabled && <p className="rounded-lg bg-paper px-4 py-3 ring-1 ring-line">{t("A mock exam is written by AI from your lessons, and no AI is set up on the server yet.")}</p>}
       {ai.status?.enabled && (!ai.consent || ai.status.access_code_required) && (
         <div className="grid gap-3 rounded-xl border border-line bg-white p-5">
           {!ai.consent && (
             <label className="flex items-start gap-3">
               <input type="checkbox" checked={ai.consent} onChange={(e) => ai.setConsent(e.target.checked)} className="mt-1 h-5 w-5 accent-violet-ink" />
-              <span className="text-[15px]">I understand that this sends my lessons' text and past exams to {ai.provider}. My material contains no personal data.</span>
+              <span className="text-[15px]">{t("I understand that this sends my lessons' text and past exams to {provider}. My material contains no personal data.", { provider: t(ai.provider) })}</span>
             </label>
           )}
           {ai.status.access_code_required && (
-            <label className="grid max-w-xs gap-1.5"><span className="font-bold">Access code</span>
+            <label className="grid max-w-xs gap-1.5"><span className="font-bold">{t("Access code")}</span>
               <input value={code} onChange={(e) => setCode(e.target.value)} className="min-h-[44px] rounded-lg border border-line px-3" autoComplete="off" />
             </label>
           )}
         </div>
       )}
-      {ai.status?.test_mode && <p className="font-bold text-coral-ink">Test mode: the server uses a simulated AI, so questions will be placeholder text.</p>}
-      {err && <p className="rounded-lg bg-coral-wash px-4 py-3 text-coral-ink" role="alert">{err}</p>}
+      {ai.status?.test_mode && <p className="font-bold text-coral-ink">{t("Test mode: the server uses a simulated AI, so questions will be placeholder text.")}</p>}
+      {err && <p className="rounded-lg bg-coral-wash px-4 py-3 text-coral-ink" role="alert">{t(err)}</p>}
       <div>
         <button className="btn-primary" disabled={!aiReady || busy || !lessons.length || total === 0 || total > MAX_TOTAL} onClick={start}>
-          {busy ? <><Loader2 size={17} className="animate-spin" aria-hidden /> Writing your exam</> : <><Clock size={17} aria-hidden /> Create the exam and start the clock</>}
+          {busy ? <><Loader2 size={17} className="animate-spin" aria-hidden /> {t("Writing your exam")}</> : <><Clock size={17} aria-hidden /> {t("Create the exam and start the clock")}</>}
         </button>
-        {busy && <p className="mt-2 text-sm text-navy-mute" role="status">Questions are written from your lessons, every quote is matched against them, and a second AI review checks the answers (and re-solves any problems). This can take a minute. The clock starts when the exam appears.</p>}
+        {busy && <p className="mt-2 text-sm text-navy-mute" role="status">{t("Questions are written from your lessons, every quote is matched against them, and a second AI review checks the answers (and re-solves any problems). This can take a minute. The clock starts when the exam appears.")}</p>}
       </div>
     </div>
   );
@@ -203,6 +205,7 @@ function useClock(deadline: number) {
 }
 
 function Exam({ exam, update }: { exam: ExamState; update: (e: ExamState) => void }) {
+  const { t } = useT();
   const left = useClock(exam.deadline);
   const submitted = useRef(false);
   const answered = exam.questions.filter((q) => (exam.answers[q.id] ?? "").trim()).length;
@@ -216,22 +219,22 @@ function Exam({ exam, update }: { exam: ExamState; update: (e: ExamState) => voi
   return (
     <div className="mt-2">
       <div className="sticky top-[57px] z-20 -mx-4 mb-6 flex items-center justify-between gap-3 border-b border-line bg-paper/95 px-4 py-3 backdrop-blur">
-        <span className={`font-display text-2xl font-extrabold tabular-nums ${left <= 300 ? "text-coral-ink" : ""}`} role="timer" aria-label={`${Math.ceil(left / 60)} minutes left`}>{fmt(left)}</span>
-        <span className="text-[15px] text-navy-mute">{answered} of {exam.questions.length} answered</span>
-        <button className="btn-primary" onClick={() => { if (confirm(answered < exam.questions.length ? "Some questions are unanswered. Hand in anyway?" : "Hand in your exam?")) submit(); }}>Hand in</button>
+        <span className={`font-display text-2xl font-extrabold tabular-nums ${left <= 300 ? "text-coral-ink" : ""}`} role="timer" aria-label={t("{n} minute left|{n} minutes left", { n: Math.ceil(left / 60) })}>{fmt(left)}</span>
+        <span className="text-[15px] text-navy-mute">{t("{done} of {n} answered", { done: answered, n: exam.questions.length })}</span>
+        <button className="btn-primary" onClick={() => { if (confirm(answered < exam.questions.length ? t("Some questions are unanswered. Hand in anyway?") : t("Hand in your exam?"))) submit(); }}>{t("Hand in")}</button>
       </div>
-      <h1 className="text-2xl font-bold">Mock exam</h1>
-      <p className="text-navy-mute">{exam.minutes} minutes. Your answers are saved on this device as you go; if you reload, the clock keeps running.</p>
+      <h1 className="text-2xl font-bold">{t("Mock exam")}</h1>
+      <p className="text-navy-mute">{t("{n} minutes. Your answers are saved on this device as you go; if you reload, the clock keeps running.", { n: exam.minutes })}</p>
 
       {sections.map((sec, si) => (
         <section key={sec.format} className="mt-8">
-          <h2 className="text-xl font-bold">Part {"ABCDEFG"[si]}: {FORMAT_INFO[sec.format].name.toLowerCase()}</h2>
+          <h2 className="text-xl font-bold">{t("Part {letter}: {format}", { letter: "ABCDEFG"[si], format: t(FORMAT_INFO[sec.format].name).toLowerCase() })}</h2>
           <ol className="mt-3 grid gap-4">
             {sec.items.map(({ q, n }) => (
               <li key={q.id} className="rounded-xl border border-line bg-white p-5">
                 <div className="flex items-start justify-between gap-3">
                   <span className="font-bold"><span className="text-navy-mute">{n}. </span>{q.answer.kind !== "blank" && <RichText text={q.prompt} />}</span>
-                  <span className="shrink-0 text-sm text-navy-mute">{maxPoints(q)} {maxPoints(q) === 1 ? "point" : "points"}</span>
+                  <span className="shrink-0 text-sm text-navy-mute">{t("{n} point|{n} points", { n: maxPoints(q) })}</span>
                 </div>
                 <div className="mt-3"><ExamInput q={q} value={exam.answers[q.id] ?? ""} onChange={(v) => set(q.id, v)} /></div>
               </li>
@@ -239,12 +242,13 @@ function Exam({ exam, update }: { exam: ExamState; update: (e: ExamState) => voi
           </ol>
         </section>
       ))}
-      <button className="btn-primary mt-8" onClick={() => { if (confirm("Hand in your exam?")) submit(); }}>Hand in</button>
+      <button className="btn-primary mt-8" onClick={() => { if (confirm(t("Hand in your exam?"))) submit(); }}>{t("Hand in")}</button>
     </div>
   );
 }
 
 function Report({ course, exam, update, save }: { course: Course; exam: ExamState; update: (e: ExamState | null) => void; save: (c: Course) => Promise<void> }) {
+  const { t } = useT();
   const [progress, setProgress] = useState(0);
   const started = useRef(false);
   const grades = exam.grades;
@@ -273,7 +277,7 @@ function Report({ course, exam, update, save }: { course: Course; exam: ExamStat
           g[q.id] = { points: halves(r.fraction * max), max, verdict: r.exact ? "correct" : r.right ? "partial" : "incorrect" };
         } else if (a.kind === "open") {
           const ans = raw.trim();
-          if (!ans) g[q.id] = { points: 0, max, verdict: "incorrect", feedback: "No answer was given." };
+          if (!ans) g[q.id] = { points: 0, max, verdict: "incorrect", feedback: t("No answer was given.") };
           else {
             try {
               const r = await api.grade({ question: q.prompt, key_points: a.key_points, model_answer: a.model_answer, final_answer: a.final_answer ?? "",
@@ -283,7 +287,7 @@ function Report({ course, exam, update, save }: { course: Course; exam: ExamStat
                 : Math.min(max, r.covered.length || (r.verdict === "correct" ? max : 0));
               g[q.id] = { points, max, verdict: r.verdict, feedback: r.feedback, covered: r.covered };
             } catch {
-              g[q.id] = { points: 0, max, verdict: "ungraded", feedback: "This answer couldn't be graded (no connection to the AI). Compare it with the model answer below." };
+              g[q.id] = { points: 0, max, verdict: "ungraded", feedback: t("This answer couldn't be graded (no connection to the AI). Compare it with the model answer below.") };
             }
           }
           setProgress((p) => p + 1);
@@ -325,8 +329,8 @@ function Report({ course, exam, update, save }: { course: Course; exam: ExamStat
     return (
       <div className="py-16 text-center" role="status">
         <Loader2 className="mx-auto animate-spin text-violet" size={28} aria-hidden />
-        <p className="mt-4 text-xl font-bold">Marking your exam</p>
-        {writtenCount > 0 && <p className="mt-1 text-navy-mute">Written answers graded: {progress} of {writtenCount}</p>}
+        <p className="mt-4 text-xl font-bold">{t("Marking your exam")}</p>
+        {writtenCount > 0 && <p className="mt-1 text-navy-mute">{t("Written answers graded: {done} of {n}", { done: progress, n: writtenCount })}</p>}
       </div>
     );
   }
@@ -335,20 +339,23 @@ function Report({ course, exam, update, save }: { course: Course; exam: ExamStat
   return (
     <div className="mt-4 grid gap-6">
       <div className="rounded-xl bg-navy px-6 py-5 text-white">
-        <p className="text-white/70">Mock exam result</p>
+        <p className="text-white/70">{t("Mock exam result")}</p>
         <p className="font-display text-5xl font-extrabold">{Math.round((100 * summary.score) / summary.max)}%</p>
-        <p className="mt-1 text-white/80">{summary.score} of {summary.max} points, in {used < 1 ? "under a minute" : `${used} of ${exam.minutes} minutes`}.{writtenCount > 0 && " Written answers were graded by AI against your lessons; it can make mistakes."}</p>
+        <p className="mt-1 text-white/80">{used < 1
+            ? t("{score} of {max} points, in under a minute.", { score: summary.score, max: summary.max })
+            : t("{score} of {max} points, in {used} of {total} minutes.", { score: summary.score, max: summary.max, used, total: exam.minutes })}
+          {writtenCount > 0 && ` ${t("Written answers were graded by AI against your lessons; it can make mistakes.")}`}</p>
       </div>
-      {ungraded && <p className="rounded-lg bg-paper px-4 py-3 ring-1 ring-line">Some written answers couldn't be graded and count as 0 for now. Check them against the model answers below.</p>}
+      {ungraded && <p className="rounded-lg bg-paper px-4 py-3 ring-1 ring-line">{t("Some written answers couldn't be graded and count as 0 for now. Check them against the model answers below.")}</p>}
       <section className="rounded-xl border border-line bg-white p-5">
-        <h2 className="text-lg font-bold">By lesson</h2>
+        <h2 className="text-lg font-bold">{t("By lesson")}</h2>
         <div className="mt-3">
-          <Bars rows={Object.entries(summary.by).map(([lid, v]) => ({ key: lid, count: Math.round((100 * v.score) / v.max), label: <span>{exam.lessonTitles[lid] ?? "Lesson"} <span className="text-navy-mute">({v.score}/{v.max})</span></span> }))} />
+          <Bars rows={Object.entries(summary.by).map(([lid, v]) => ({ key: lid, count: Math.round((100 * v.score) / v.max), label: <span>{exam.lessonTitles[lid] ?? t("Lesson")} <span className="text-navy-mute">({v.score}/{v.max})</span></span> }))} />
         </div>
-        <p className="mt-3 text-sm text-navy-mute">Percent of points per lesson. Weakest lessons are the ones to practice next.</p>
+        <p className="mt-3 text-sm text-navy-mute">{t("Percent of points per lesson. Weakest lessons are the ones to practice next.")}</p>
       </section>
 
-      <h2 className="text-xl font-bold">Your answers</h2>
+      <h2 className="text-xl font-bold">{t("Your answers")}</h2>
       <ol className="grid gap-4">
         {exam.questions.map((q, i) => {
           const g = grades[q.id];
@@ -356,7 +363,7 @@ function Report({ course, exam, update, save }: { course: Course; exam: ExamStat
           return (
             <li key={q.id} className="rounded-xl border border-line bg-white p-5">
               <div className="flex items-start justify-between gap-3">
-                <p className="font-bold"><span className="text-navy-mute">{i + 1}. </span><RichText text={q.prompt} /> <span className="text-sm font-normal text-navy-mute">({FORMAT_INFO[q.format ?? "quiz"].name})</span></p>
+                <p className="font-bold"><span className="text-navy-mute">{i + 1}. </span><RichText text={q.prompt} /> <span className="text-sm font-normal text-navy-mute">({t(FORMAT_INFO[q.format ?? "quiz"].name)})</span></p>
                 <span className={`shrink-0 font-display font-bold ${g.verdict === "correct" ? "text-teal-ink" : g.verdict === "partial" ? "" : "text-coral-ink"}`}>{g.points}/{g.max}</span>
               </div>
               <p className="mt-1 text-sm text-navy-mute">{exam.lessonTitles[q.topic]}</p>
@@ -367,8 +374,8 @@ function Report({ course, exam, update, save }: { course: Course; exam: ExamStat
         })}
       </ol>
       <div className="flex flex-wrap gap-3">
-        <button className="btn-primary" onClick={() => update(null)}>Set up another mock exam</button>
-        <Link to={`/course/${course.id}`} className="btn-ghost">Back to {course.name}</Link>
+        <button className="btn-primary" onClick={() => update(null)}>{t("Set up another mock exam")}</button>
+        <Link to={`/course/${course.id}`} className="btn-ghost">{t("Back to {course}", { course: course.name })}</Link>
       </div>
     </div>
   );
@@ -388,12 +395,13 @@ function mistakeFor(q: Exercise, raw: string): string | null {
 
 /** The answer field for each format, with no feedback (it's an exam). */
 function ExamInput({ q, value, onChange }: { q: Exercise; value: string; onChange: (v: string) => void }) {
+  const { t } = useT();
   const a = q.answer;
   if (a.kind === "mcq" || a.kind === "tf") {
-    const opts = a.kind === "tf" ? ["True", "False"] : q.options ?? [];
+    const opts = a.kind === "tf" ? [t("True"), t("False")] : q.options ?? [];
     const val = (k: number) => (a.kind === "tf" ? String(k === 0) : String(k));
     return (
-      <div className={`grid gap-2 ${a.kind === "tf" ? "grid-cols-2" : ""}`} role="radiogroup" aria-label="Answer">
+      <div className={`grid gap-2 ${a.kind === "tf" ? "grid-cols-2" : ""}`} role="radiogroup" aria-label={t("Answer")}>
         {opts.map((o, k) => {
           const on = value === val(k);
           return (
@@ -411,7 +419,7 @@ function ExamInput({ q, value, onChange }: { q: Exercise; value: string; onChang
     const sel: number[] = value ? JSON.parse(value) : [];
     return (
       <div className="grid gap-2">
-        <p className="text-sm text-navy-mute">Select every correct answer.</p>
+        <p className="text-sm text-navy-mute">{t("Select every correct answer.")}</p>
         {(q.options ?? []).map((o, k) => {
           const on = sel.includes(k);
           return (
@@ -430,7 +438,7 @@ function ExamInput({ q, value, onChange }: { q: Exercise; value: string; onChang
     return (
       <p className="leading-loose">
         <RichText text={before ?? ""} />
-        <input value={value} onChange={(e) => onChange(e.target.value.slice(0, 200))} aria-label="Missing word or phrase" autoComplete="off"
+        <input value={value} onChange={(e) => onChange(e.target.value.slice(0, 200))} aria-label={t("Missing word or phrase")} autoComplete="off"
           className="mx-1 inline-block w-48 border-b-2 border-navy bg-transparent px-1 font-bold outline-none focus:border-violet" />
         <RichText text={after ?? ""} />
       </p>
@@ -446,7 +454,7 @@ function ExamInput({ q, value, onChange }: { q: Exercise; value: string; onChang
             <span className="font-bold"><RichText text={p.left} /></span>
             <select value={chosen[i] ?? ""} aria-label={`Match for ${p.left}`} className="min-h-[44px] rounded-lg border border-line bg-white px-2"
               onChange={(e) => onChange(JSON.stringify(chosen.map((c, k) => (k === i ? e.target.value || null : c))))}>
-              <option value="">Choose…</option>
+              <option value="">{t("Choose…")}</option>
               {rights.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           </li>
@@ -455,46 +463,47 @@ function ExamInput({ q, value, onChange }: { q: Exercise; value: string; onChang
     );
   }
   return (
-    <textarea rows={q.format === "short" ? 3 : 8} value={value} onChange={(e) => onChange(e.target.value.slice(0, 6000))} aria-label="Your answer"
+    <textarea rows={q.format === "short" ? 3 : 8} value={value} onChange={(e) => onChange(e.target.value.slice(0, 6000))} aria-label={t("Your answer")}
       className="w-full rounded-lg border border-line p-3 outline-none focus:border-violet" />
   );
 }
 
 /** After grading: what you answered and what was expected. */
 function ReviewAnswer({ q, raw, grade }: { q: Exercise; raw: string; grade: Grade }) {
+  const { t } = useT();
   const a = q.answer;
   const ok = grade.verdict === "correct";
   const mark = ok ? <Check size={18} className="shrink-0 text-teal-ink" aria-hidden /> : <X size={18} className="shrink-0 text-coral-ink" aria-hidden />;
   if (a.kind === "open") {
     return (
       <div className="mt-3 grid gap-2 text-[15px]">
-        <p className="whitespace-pre-line rounded-md bg-paper p-3">{raw || <span className="text-navy-mute">No answer.</span>}</p>
-        {grade.feedback && <p><b>Feedback:</b> {grade.feedback}</p>}
+        <p className="whitespace-pre-line rounded-md bg-paper p-3">{raw || <span className="text-navy-mute">{t("No answer.")}</span>}</p>
+        {grade.feedback && <p><b>{t("Feedback:")}</b> {grade.feedback}</p>}
         {q.format !== "short" && a.key_points.length > 1 && grade.covered && (
           <ul className="grid gap-1">
             {a.key_points.map((k, i) => (
-              <li key={i} className="flex gap-2">{grade.covered!.includes(i) ? <Check size={16} className="mt-0.5 text-teal-ink" aria-label="mark earned" /> : <X size={16} className="mt-0.5 text-coral-ink" aria-label="mark missed" />}<RichText text={k} /></li>
+              <li key={i} className="flex gap-2">{grade.covered!.includes(i) ? <Check size={16} className="mt-0.5 text-teal-ink" aria-label={t("mark earned")} /> : <X size={16} className="mt-0.5 text-coral-ink" aria-label={t("mark missed")} />}<RichText text={k} /></li>
             ))}
           </ul>
         )}
-        <p><b>Model answer:</b> <RichText text={a.model_answer} /></p>
-        {a.problem && <p className="text-sm text-navy-mute">Final answer: {a.final_answer}. Computed by AI and solved a second time to check it.</p>}
+        <p><b>{t("Model answer:")}</b> <RichText text={a.model_answer} /></p>
+        {a.problem && <p className="text-sm text-navy-mute">{t("Final answer: {answer}. Computed by AI and solved a second time to check it.", { answer: a.final_answer ?? "" })}</p>}
       </div>
     );
   }
-  let yours = "none";
+  let yours = t("none");
   if (raw) {
     if (a.kind === "mcq") yours = `${LETTERS[Number(raw)]}) ${q.options?.[Number(raw)] ?? ""}`;
-    else if (a.kind === "tf") yours = raw === "true" ? "True" : "False";
-    else if (a.kind === "multi") yours = (JSON.parse(raw) as number[]).sort().map((i) => LETTERS[i]).join(", ") || "none";
+    else if (a.kind === "tf") yours = raw === "true" ? t("True") : t("False");
+    else if (a.kind === "multi") yours = (JSON.parse(raw) as number[]).sort().map((i) => LETTERS[i]).join(", ") || t("none");
     else if (a.kind === "blank") yours = raw;
     else if (a.kind === "match") yours = (JSON.parse(raw) as (string | null)[]).map((c, i) => `${a.pairs[i].left} → ${c ?? "?"}`).join("; ");
   }
   return (
     <div className="mt-3 grid gap-1.5 text-[15px]">
       {q.answer.kind === "blank" && <p className="text-navy-soft"><RichText text={q.prompt} /></p>}
-      <p className="flex gap-2">{mark}<span>Your answer: <b>{yours}</b></span></p>
-      {!ok && <p>Correct: <b>{q.answer_text}</b></p>}
+      <p className="flex gap-2">{mark}<span>{t("Your answer:")} <b>{yours}</b></span></p>
+      {!ok && <p>{t("Correct:")} <b>{a.kind === "tf" ? t(q.answer_text ?? "") : q.answer_text}</b></p>}
     </div>
   );
 }

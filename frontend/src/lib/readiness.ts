@@ -1,5 +1,9 @@
 // Readiness per topic or pack, from the questions you answered yourself.
 import type { History } from "./storage";
+import type { Params } from "../i18n";
+
+/** A message to show, translated where it's displayed. */
+export interface Msg { key: string; params?: Params }
 import type { Course, Exercise, Pack, TopicId } from "./types";
 
 export const WINDOW = 10;
@@ -12,9 +16,9 @@ export interface Readiness {
   confidence: number | null;
   answered: { firstTry: number; later: number; of: number };
   score: number | null;
-  message: string | null;
+  message: Msg | null;
   mistakes: { label: string; count: number }[];
-  next: string;
+  next: Msg;
 }
 
 export function readiness(pack: Pack, h: History, topic: TopicId): Readiness {
@@ -31,20 +35,20 @@ export function readiness(pack: Pack, h: History, topic: TopicId): Readiness {
   const mistakes = Object.entries(counts).map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count);
 
   const missed = ex.length - firstTry - later;
-  let message: string | null = null;
+  let message: Msg | null = null;
   if (conf !== null && ex.length >= MIN_ANSWERED) {
-    if (conf >= 4 && rate < 0.5) message = `You felt confident (${conf}/5), but missed ${missed} of your last ${ex.length} questions. Let's strengthen that.`;
-    else if (conf <= 2 && rate >= 0.8) message = `You rated your confidence ${conf}/5, yet you got ${firstTry + later} of your last ${ex.length} right. You may be readier than you feel.`;
+    if (conf >= 4 && rate < 0.5) message = { key: "You felt confident ({conf}/5), but missed {missed} of your last {n} questions. Let's strengthen that.", params: { conf, missed, n: ex.length } };
+    else if (conf <= 2 && rate >= 0.8) message = { key: "You rated your confidence {conf}/5, yet you got {right} of your last {n} right. You may be readier than you feel.", params: { conf, right: firstTry + later, n: ex.length } };
   }
 
   const order = pack.topics.map((t) => t.id);
   const nextTopic = order[order.indexOf(topic) + 1];
-  let next: string;
-  if (score === null) next = `Answer ${MIN_ANSWERED - ex.length} more ${MIN_ANSWERED - ex.length === 1 ? "question" : "questions"} to get a readiness score.`;
-  else if (mistakes.length && score < 80) next = `Practice again and watch for: ${mistakes[0].label.toLowerCase()}.`;
-  else if (score >= 80 && nextTopic) next = `Ready to move on: try ${pack.topics.find((t) => t.id === nextTopic)!.name.toLowerCase()}.`;
-  else if (score >= 80) next = "Keep it fresh with a short session every few days.";
-  else next = "Do another practice session on this.";
+  let next: Msg;
+  if (score === null) next = { key: "Answer {n} more question to get a readiness score.|Answer {n} more questions to get a readiness score.", params: { n: MIN_ANSWERED - ex.length } };
+  else if (mistakes.length && score < 80) next = { key: "Practice again and watch for: {mistake}.", params: { mistake: mistakes[0].label.toLowerCase() } };
+  else if (score >= 80 && nextTopic) next = { key: "Ready to move on: try {topic}.", params: { topic: pack.topics.find((t) => t.id === nextTopic)!.name.toLowerCase() } };
+  else if (score >= 80) next = { key: "Keep it fresh with a short session every few days." };
+  else next = { key: "Do another practice session on this." };
 
   return { topic, topicName, confidence: conf, answered: { firstTry, later, of: ex.length }, score, message, mistakes, next };
 }

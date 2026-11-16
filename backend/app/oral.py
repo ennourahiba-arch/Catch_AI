@@ -99,7 +99,8 @@ async def examiner_turn(t: ExaminerTurn) -> dict[str, Any]:
 async def grade(g: GradeRequest) -> dict[str, Any]:
     system = (
         "TASK: grade_answer\nYou grade a student's written exam answer against the answer key and sources. "
-        "Be fair: accept paraphrases and any language, reward correct ideas, penalise errors. Return only JSON."
+        "Be fair: accept paraphrases and any language, reward correct ideas, penalise errors. "
+        "Write the feedback in the same language as the student's answer. Return only JSON."
     )
     expected = (f"EXPECTED FINAL RESULT: {g.final_answer} (accept equivalent units and rounding; the final result only "
                 "counts if the student's working supports it)\n") if g.final_answer else ""

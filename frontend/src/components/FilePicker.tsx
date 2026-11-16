@@ -1,9 +1,11 @@
 import { useRef, useState } from "react";
 import { FileText, Upload, X } from "lucide-react";
+import { useT } from "../i18n";
 
 const ACCEPT = ".pdf,.docx,.pptx,.txt,.md";
 
 export default function FilePicker({ label, help, files, setFiles, max }: { label: string; help: string; files: File[]; setFiles: (f: File[]) => void; max: number }) {
+  const { t } = useT();
   const input = useRef<HTMLInputElement>(null);
   const [drag, setDrag] = useState(false);
   const add = (list: FileList | null) => {
@@ -25,8 +27,8 @@ export default function FilePicker({ label, help, files, setFiles, max }: { labe
         className={`mt-2 flex w-full flex-col items-center gap-1 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors ${drag ? "border-violet bg-violet-wash/40" : "border-line bg-white hover:border-navy-mute"}`}
       >
         <Upload size={22} className="text-navy-mute" aria-hidden />
-        <span className="font-bold">Choose files or drop them here</span>
-        <span className="text-sm text-navy-mute">PDF, Word (.docx), PowerPoint (.pptx) or text. Up to {max} files, 15 MB each.</span>
+        <span className="font-bold">{t("Choose files or drop them here")}</span>
+        <span className="text-sm text-navy-mute">{t("PDF, Word (.docx), PowerPoint (.pptx) or text. Up to {n} files, 15 MB each.", { n: max })}</span>
       </button>
       <input ref={input} type="file" multiple accept={ACCEPT} className="sr-only" onChange={(e) => { add(e.target.files); e.target.value = ""; }} />
       {files.length > 0 && (

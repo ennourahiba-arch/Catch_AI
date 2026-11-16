@@ -191,6 +191,7 @@ class QuestionIn(BaseModel):
 class CreateRoom(BaseModel):
     title: str = Field(default="Class quiz", max_length=80)
     mode: Literal["class", "duel"] = "class"
+    lang: Literal["en", "fr", "it"] = "en"
     player_name: str = Field(default="", max_length=40)   # duel: the creator also plays
     exercise_ids: list[str] = Field(default_factory=list, max_length=20)   # verified Calculus questions
     questions: list[QuestionIn] = Field(default_factory=list, max_length=20)  # approved uploaded questions
@@ -229,13 +230,13 @@ def create_room(body: CreateRoom) -> dict[str, Any]:
         e = get_exercise(eid)
         if not e:
             raise HTTPException(404, f"Question {eid} isn't in the current Calculus pack.")
-        questions.append(calculus_question(e))
+        questions.append(calculus_question(e, body.lang))
     questions += [q.model_dump() for q in body.questions]
     if not 1 <= len(questions) <= 20:
         raise HTTPException(422, "Choose between 1 and 20 questions.")
     title = body.title
     if body.exercise_ids and title in ("Class quiz", "Duel"):
-        title = topic_name(get_exercise(body.exercise_ids[0])["topic"])
+        title = topic_name(get_exercise(body.exercise_ids[0])["topic"], body.lang)
     if body.mode == "duel":
         name = " ".join(body.player_name.split())[:24]
         if not name:
