@@ -108,7 +108,10 @@ Write {n} {kind}. Each has key_points (2-5 things a full-marks answer must conta
 without giving the answer away, and difficulty 1-3. Vary topics across the material.
 JSON: {{"title": "short title", {PROFILE}, "questions": [{{"question": "", "key_points": [""], "model_answer": "",
 "hint": "", "difficulty": 2, "source_id": "P1", "quote": ""}}]}}"""
-    return f"{task}\n\n{material_block(passages)}{_style(past)}"
+    files = list(dict.fromkeys(p["file"] for p in passages))
+    spread = ("\n\nThe MATERIAL comes from several lessons (named in brackets after each passage id): "
+              + "; ".join(files[:20]) + ". Spread the questions evenly across all of them.") if len(files) > 1 else ""
+    return f"{task}{spread}\n\n{material_block(passages)}{_style(past)}"
 
 
 CHECK_SYSTEM = (

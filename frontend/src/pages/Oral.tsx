@@ -9,7 +9,7 @@ import { addConfidence, loadHistory } from "../lib/storage";
 import { api, type ChatMsg } from "../lib/api";
 import { addExerciseAttempt } from "../lib/storage";
 import { VOICE_LANGS, canSpeak, speak, stopSpeaking, useDictation, useVoiceLang } from "../lib/speech";
-import type { CustomPack, Exercise } from "../lib/types";
+import type { Course, Exercise, Lesson } from "../lib/types";
 
 function Bubble({ m }: { m: ChatMsg }) {
   const mine = m.role === "student";
@@ -89,14 +89,17 @@ function useScrollToEnd(dep: unknown) {
 }
 
 /** Oral exam practice: an AI examiner asks questions from your course and follows up. */
-export default function Oral({ pack }: { pack: CustomPack }) {
+export default function Oral({ course, lesson }: { course: Course; lesson: Lesson }) {
+  const bank = lesson.banks.oral!;
+  const pack = { id: lesson.id, title: lesson.title, exercises: bank.exercises, generator: bank.generator };
+  const back = `/course/${course.id}/lesson/${lesson.id}`;
   const [qs, setQs] = useState<Exercise[] | null>(null);
   const [last, setLast] = useState<number | undefined>();
   useEffect(() => { loadHistory().then((h) => setLast(h.confidence.find((c) => c.topic === pack.id)?.rating)); }, [pack.id]);
   if (!qs) {
     return (
       <div className="px-4">
-        <ConfidenceCheck title={pack.title} last={last} backTo={`/mine/${pack.id}`} onPick={async (n) => {
+        <ConfidenceCheck title={pack.title} last={last} backTo={back} onPick={async (n) => {
           await addConfidence({ topic: pack.id, ts: Date.now(), rating: n as 1 | 2 | 3 | 4 | 5 });
           setQs(pickSession(pack.exercises, await loadHistory()));
         }} />
@@ -105,7 +108,7 @@ export default function Oral({ pack }: { pack: CustomPack }) {
   }
   return (
     <div className="mx-auto max-w-2xl px-4 pb-24 pt-6">
-      <Link to={`/mine/${pack.id}`} className="inline-flex items-center gap-1.5 text-[15px] font-bold text-navy-mute hover:text-navy"><ArrowLeft size={16} aria-hidden /> {pack.title}</Link>
+      <Link to={back} className="inline-flex items-center gap-1.5 text-[15px] font-bold text-navy-mute hover:text-navy"><ArrowLeft size={16} aria-hidden /> {pack.title}</Link>
       {pack.generator.test_mode && <p className="mt-3 rounded-lg bg-coral-wash px-4 py-2 text-sm font-bold text-coral-ink">Test mode: the examiner's replies are simulated.</p>}
       <Examiner pack={pack} qs={qs} onRestart={async () => setQs(pickSession(pack.exercises, await loadHistory()))} />
       <p className="mt-6 text-sm text-navy-mute">
@@ -116,7 +119,7 @@ export default function Oral({ pack }: { pack: CustomPack }) {
   );
 }
 
-function Examiner({ pack, qs, onRestart }: { pack: CustomPack; qs: Exercise[]; onRestart: () => void }) {
+function Examiner({ pack, qs, onRestart }: { pack: { id: string }; qs: Exercise[]; onRestart: () => void }) {
   const [i, setI] = useState(0);
   const [history, setHistory] = useState<ChatMsg[]>([]);
   const [closed, setClosed] = useState(false);

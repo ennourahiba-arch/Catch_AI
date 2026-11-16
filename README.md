@@ -2,8 +2,8 @@
 
 **Practice in the format of your real exam.**
 
-Students upload their course and past exams, choose their exam's format (multiple choice, written or oral),
-and practice on questions written in the same style, with hints, worked solutions and a readiness score.
+Students create a course for each subject they take (e.g. "Systems"), add its lessons and past exams, and either
+practice one lesson in a chosen format (multiple choice, written or oral) or take a timed mock exam across all lessons.
 Professors run live class quizzes and see, after every question, what the room got wrong and why.
 A mathematically verified Calculus 1 question bank works with no AI at all.
 
@@ -14,13 +14,14 @@ A mathematically verified Calculus 1 question bank works with no AI at all.
 | Calculus 1 bank: 33 SymPy-verified questions in 4 topics, typed answers checked exactly in the browser | Working |
 | Multiple-choice versions of every Calculus question; each wrong option comes from a named common mistake | Working |
 | Practice sessions: confidence check, 5 questions, hints, worked solutions, readiness, recurring mistake | Working |
-| Uploads (PDF, Word, PowerPoint, text) + past exams → question bank in your exam's style, any subject | Working (needs an AI key) |
+| Courses → lessons: upload each lesson's material (PDF, Word, PowerPoint, text); past exams per course | Working |
+| Per lesson, per format question banks, created on demand in the past exams' style, any subject | Working (needs an AI key) |
+| Timed mock exam across chosen lessons: multiple choice + written parts, survives reloads, report by lesson | Working (needs an AI key) |
 | Formats: multiple choice (graded exactly), written (AI-graded against your course), oral (AI examiner chat) | Working |
-| Exam profile read from past exams (question types, length, duration) | Working, used by the mock exam next |
+| Exam profile read from past exams (question types, length, duration), used to set up the mock exam | Working |
 | Live class quiz: QR join, per-question timer, reveal with answer breakdown, class summary, scores | Working |
 | Privacy: breakdowns and scores hidden below 3 teams; no accounts; uploads not stored on the server | Working |
 | Offline: installable app; Calculus and multiple-choice practice work with no internet | Working |
-| Timed mock exam in your exam's format | **Next** |
 
 ## Repository layout
 
@@ -34,6 +35,7 @@ A mathematically verified Calculus 1 question bank works with no AI at all.
 │   ├── app/main.py              Live quiz routes, upload + AI routes
 │   ├── app/quiz.py              Quiz rules, per-question results, summary, insights
 │   ├── app/genpack.py           Question generation, quote check, independent review
+│   │                            (POST /api/generate per lesson, POST /api/mock-exam across lessons)
 │   ├── app/oral.py              Oral examiner (with answer-leak guard) and written grading
 │   ├── app/llm.py               Gemini / Claude / simulated AI, retries and fallback model
 │   └── tests/
@@ -60,7 +62,8 @@ Written answers and oral scores are graded by AI and labelled as such.
 
 ## Privacy
 
-- No accounts, no real names. Practice history stays in the browser; professors never see it.
+- No accounts, no real names. Courses, lessons, practice history and mock results stay in the browser;
+  professors never see them. Uploading a lesson only extracts its text; no AI is used until you create questions.
 - Uploaded files are read in memory on the server and not stored. Generated questions are saved only in the
   uploader's browser. Uploaders confirm that their text will be sent to the AI provider.
 - Class quizzes store team nicknames and answers only, and are deleted after 3 hours. The server keeps no

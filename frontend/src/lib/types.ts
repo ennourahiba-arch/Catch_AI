@@ -48,7 +48,58 @@ export interface ExamProfile {
   notes: string;
 }
 
-/** A question bank generated from the user's own material. Lives in IndexedDB only. */
+export type Format = "quiz" | "written" | "oral";
+export interface Passage { id: string; file: string; text: string }
+
+/** Questions generated for one lesson in one format. */
+export interface Bank {
+  format: Format;
+  created_at: string;
+  generator: { provider: string | null; model: string; test_mode: boolean };
+  exercises: Exercise[];
+  dropped: string[];
+  approved?: string[]; // question ids a professor approved for class
+}
+
+export interface Lesson {
+  id: string;
+  title: string;
+  created_at: string;
+  sources: string[];
+  passages: Passage[];
+  truncated?: boolean;
+  banks: Partial<Record<Format, Bank>>;
+}
+
+export interface MockResult {
+  id: string;
+  ts: number;
+  minutes_allowed: number;
+  minutes_used: number;
+  score: number;
+  max: number;
+  by_lesson: { lesson_id: string; title: string; score: number; max: number }[];
+}
+
+/** One course the student is taking (e.g. "Systems"). Lives in IndexedDB only. */
+export interface Course {
+  id: string;
+  name: string;
+  created_at: string;
+  lessons: Lesson[];
+  past_exams: { files: string[]; text: string } | null;
+  exam_profile: ExamProfile | null;
+  mocks: MockResult[];
+}
+
+/** Lets a lesson's bank reuse the practice, readiness and session code. */
+export function lessonPack(course: Course, lesson: Lesson, format?: Format): Pack {
+  const ex = format ? lesson.banks[format]?.exercises ?? [] : Object.values(lesson.banks).flatMap((b) => b?.exercises ?? []);
+  return { pack_id: lesson.id, subject: course.name, pack_version: "custom", content_hash: lesson.id, topics: [{ id: lesson.id, name: lesson.title }], exercises: ex };
+}
+
+// ---- earlier versions (kept only to move old uploads into courses) ----
+/** A question bank from the previous version (one upload = one pack). */
 export interface CustomPack {
   id: string;
   version?: number; // 2 for question banks; older packs were "catch the AI" rounds
@@ -65,7 +116,3 @@ export interface CustomPack {
 }
 
 export const isCurrentPack = (p: CustomPack) => p.version === 2 && Array.isArray(p.exercises);
-
-export function asPack(c: CustomPack): Pack {
-  return { pack_id: c.id, subject: c.title, pack_version: "custom", content_hash: c.id, topics: [{ id: c.id, name: c.title }], exercises: c.exercises };
-}

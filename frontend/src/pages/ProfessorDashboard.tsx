@@ -6,8 +6,8 @@ import { ErrorState, Loading } from "../components/States";
 import { usePack } from "../components/usePack";
 import { LETTERS } from "../components/Live";
 import { api, tokens } from "../lib/api";
-import { listPacks } from "../lib/storage";
-import { isCurrentPack, type CustomPack, type TopicId } from "../lib/types";
+import { listCourses } from "../lib/storage";
+import type { Course, TopicId } from "../lib/types";
 
 export default function ProfessorDashboard() {
   const { pack, error, retry } = usePack();
@@ -18,8 +18,9 @@ export default function ProfessorDashboard() {
   const [secs, setSecs] = useState(60);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [mine, setMine] = useState<CustomPack[]>([]);
-  useEffect(() => { listPacks().then((p) => setMine(p.filter((x) => isCurrentPack(x) && x.format === "quiz"))); }, []);
+  const [courses, setCourses] = useState<Course[]>([]);
+  useEffect(() => { listCourses().then(setCourses); }, []);
+  const quizLessons = courses.flatMap((c) => c.lessons.filter((l) => l.banks.quiz).map((l) => ({ c, l })));
 
   if (error) return <ErrorState message={error} onRetry={retry} />;
   if (!pack) return <Loading />;
@@ -46,13 +47,13 @@ export default function ProfessorDashboard() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="font-bold">Any subject: use your own course</h2>
-            <p className="text-[15px] text-navy-soft">Upload notes, slides and past exams to generate a multiple-choice bank. You approve each question before it reaches your class.</p>
+            <p className="text-[15px] text-navy-soft">Create a course, add a lesson with your slides, and create its multiple-choice questions. You approve each question before it reaches your class.</p>
           </div>
-          <Link to="/create" className="btn-violet"><FileUp size={17} aria-hidden /> Upload a course</Link>
+          <Link to="/student" className="btn-violet"><FileUp size={17} aria-hidden /> Go to my courses</Link>
         </div>
-        {mine.length > 0 && (
+        {quizLessons.length > 0 && (
           <ul className="mt-4 flex flex-wrap gap-2">
-            {mine.map((p) => <li key={p.id}><Link to={`/mine/${p.id}`} className="inline-block rounded-full bg-violet-wash px-4 py-2 font-bold text-violet-ink hover:underline">{p.title}</Link></li>)}
+            {quizLessons.map(({ c, l }) => <li key={l.id}><Link to={`/course/${c.id}/lesson/${l.id}`} className="inline-block rounded-full bg-violet-wash px-4 py-2 font-bold text-violet-ink hover:underline">{c.name}: {l.title}</Link></li>)}
           </ul>
         )}
       </section>

@@ -1,6 +1,6 @@
 // Local-only learning history in IndexedDB. Nothing here is sent to a server,
 // and professors never see it.
-import type { CustomPack, TopicId } from "./types";
+import { isCurrentPack, type Course, type CustomPack, type TopicId } from "./types";
 
 export interface Attempt {
   id?: number;
@@ -40,8 +40,8 @@ export interface Confidence {
 
 type Store = "attempts" | "exercises" | "confidence";
 const DB = "catch-the-ai";
-const VERSION = 3;
-const memory: Record<Store, unknown[]> & { kv: Record<string, unknown>; packs: Record<string, CustomPack> } = { attempts: [], exercises: [], confidence: [], kv: {}, packs: {} };
+const VERSION = 4;
+const memory: Record<Store, unknown[]> & { kv: Record<string, unknown>; packs: Record<string, CustomPack>; courses: Record<string, Course> } = { attempts: [], exercises: [], confidence: [], kv: {}, packs: {}, courses: {} };
 
 function open(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -54,6 +54,7 @@ function open(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains("kv")) db.createObjectStore("kv");
       if (!db.objectStoreNames.contains("packs")) db.createObjectStore("packs", { keyPath: "id" });
+      if (!db.objectStoreNames.contains("courses")) db.createObjectStore("courses", { keyPath: "id" });
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -112,9 +113,9 @@ export async function setKV(key: string, value: unknown): Promise<void> {
 
 export async function clearAll(): Promise<void> {
   try {
-    for (const s of ["attempts", "exercises", "confidence", "kv", "packs"]) await tx(s, "readwrite", (st) => st.clear());
+    for (const s of ["attempts", "exercises", "confidence", "kv", "packs", "courses"]) await tx(s, "readwrite", (st) => st.clear());
   } catch {
-    memory.attempts = []; memory.exercises = []; memory.confidence = []; memory.kv = {}; memory.packs = {};
+    memory.attempts = []; memory.exercises = []; memory.confidence = []; memory.kv = {}; memory.packs = {}; memory.courses = {};
   }
 }
 
@@ -139,3 +140,40 @@ export async function loadHistory() {
   return { exercises, confidence };
 }
 export type History = Awaited<ReturnType<typeof loadHistory>>;
+
+// ---- Courses (each with lessons, past exams and mock-exam results) ----
+export const newId = (prefix: string) => `${prefix}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
+
+export async function saveCourse(c: Course): Promise<void> {
+  try { await tx("courses", "readwrite", (s) => s.put(c)); } catch { memory.courses[c.id] = c; }
+}
+export async function getCourse(id: string): Promise<Course | undefined> {
+  try { return (await tx<Course>("courses", "readonly", (s) => s.get(id))) ?? undefined; } catch { return memory.courses[id]; }
+}
+export async function deleteCourse(id: string): Promise<void> {
+  try { await tx("courses", "readwrite", (s) => s.delete(id)); } catch { delete memory.courses[id]; }
+}
+export async function listCourses(): Promise<Course[]> {
+  await migrateOldPacks();
+  let all: Course[];
+  try { all = await tx<Course[]>("courses", "readonly", (s) => s.getAll()); } catch { all = Object.values(memory.courses); }
+  return all.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** One-time move: each upload from the previous version becomes a course with one lesson.
+ * Questions keep their ids, so practice history and readiness carry over. */
+async function migrateOldPacks(): Promise<void> {
+  let old: CustomPack[] = [];
+  try { old = await tx<CustomPack[]>("packs", "readonly", (s) => s.getAll()); } catch { old = Object.values(memory.packs); }
+  for (const p of old) {
+    if (isCurrentPack(p)) {
+      const lessonId = p.id; // keep the id so earlier answers still count toward this lesson
+      await saveCourse({
+        id: newId("c"), name: p.title, created_at: p.created_at, past_exams: null, exam_profile: p.exam_profile ?? null, mocks: [],
+        lessons: [{ id: lessonId, title: p.title, created_at: p.created_at, sources: p.sources, passages: p.passages,
+          banks: { [p.format]: { format: p.format, created_at: p.created_at, generator: p.generator, exercises: p.exercises, dropped: p.dropped, approved: p.approved ?? [] } } }],
+      });
+    }
+    await deletePack(p.id);
+  }
+}

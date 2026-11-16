@@ -216,3 +216,24 @@ def test_rate_limit_and_access_code(client, monkeypatch):
 def test_passage_split_cap():
     ps, truncated = extract.to_passages([("big.txt", COURSE * 60)])
     assert truncated and sum(len(p["text"]) for p in ps) <= extract.MAX_MATERIAL_CHARS + extract.PASSAGE_TARGET * 3
+
+
+def test_mock_exam_across_lessons(client):
+    ps = passages(client)
+    half = len(ps) // 2
+    for p in ps[:half]:
+        p["file"] = "Lesson 1: Scheduling"
+    for p in ps[half:]:
+        p["file"] = "Lesson 2: Context switches"
+    seen = {}
+    def spy(system, user):
+        if "TASK: generate_" in user:
+            seen["spread"] = "Spread the questions evenly" in user and "Lesson 2" in user
+        return fake_ai.respond(system, user)
+    llm.FAKE_RESPONDER = spy
+    r = client.post("/api/mock-exam", json={"passages": ps, "mcq": 6, "written": 2})
+    assert r.status_code == 200, r.text
+    out = r.json()
+    assert len(out["mcq"]["exercises"]) == 6 and len(out["written"]["exercises"]) == 2
+    assert out["exam_profile"]["duration_minutes"] == 90 and seen["spread"]
+    assert client.post("/api/mock-exam", json={"passages": ps, "mcq": 0, "written": 0}).status_code == 422

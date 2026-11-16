@@ -387,6 +387,39 @@ async def generate(body: GenerateIn, request: Request) -> dict[str, Any]:
         raise _ai_error(e)
 
 
+class MockIn(BaseModel):
+    passages: list[PassageIn] = Field(min_length=1, max_length=200)
+    past_exams: str = Field(default="", max_length=30000)
+    mcq: int = Field(default=10, ge=0, le=25)
+    written: int = Field(default=3, ge=0, le=8)
+
+
+@app.post("/api/mock-exam")
+async def mock_exam(body: MockIn, request: Request) -> dict[str, Any]:
+    """Questions for a timed mock exam across several lessons: a multiple-choice part
+    and a written part, generated in parallel with the same checks as practice questions."""
+    if body.mcq + body.written == 0:
+        raise HTTPException(422, "Choose at least one question.")
+    ratelimit.check(request, "generate")
+    passages = [p.model_dump() for p in body.passages]
+    if sum(len(p["text"]) for p in passages) > extract.MAX_MATERIAL_CHARS + 5000:
+        raise HTTPException(413, "That's too much material for one exam. Choose fewer lessons.")
+    parts = [("quiz", body.mcq), ("written", body.written)]
+    jobs = [genpack.generate(fmt, passages, body.past_exams, n) for fmt, n in parts if n > 0]
+    results = await asyncio.gather(*jobs, return_exceptions=True)
+    out: dict[str, Any] = {"mcq": None, "written": None, "exam_profile": None, "errors": []}
+    for (fmt, n), res in zip([p for p in parts if p[1] > 0], results):
+        key = "mcq" if fmt == "quiz" else "written"
+        if isinstance(res, Exception):
+            out["errors"].append(str(res) if isinstance(res, (llm.LLMError, genpack.GenerationError)) else "generation failed")
+        else:
+            out[key] = res
+            out["exam_profile"] = out["exam_profile"] or res.get("exam_profile")
+    if not out["mcq"] and not out["written"]:
+        raise _ai_error(results[0]) if isinstance(results[0], (llm.LLMError, genpack.GenerationError)) else HTTPException(500, "Generation failed. Try again.")
+    return out
+
+
 @app.post("/api/grade")
 async def grade_answer(body: oral.GradeRequest, request: Request) -> dict[str, Any]:
     ratelimit.check(request, "message")

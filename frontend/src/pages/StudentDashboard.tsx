@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { FileUp, Play, Users } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Play, Plus, Users } from "lucide-react";
 import ReadinessCard from "../components/ReadinessCard";
 import OfflineStatus from "../components/OfflineStatus";
 import { ErrorState, Loading } from "../components/States";
 import { usePack } from "../components/usePack";
-import { readiness } from "../lib/readiness";
-import { clearAll, getKV, listPacks, loadHistory, setKV, type History } from "../lib/storage";
-import { asPack, isCurrentPack, type CustomPack } from "../lib/types";
+import { courseReadiness, readiness } from "../lib/readiness";
+import { clearAll, getKV, listCourses, loadHistory, newId, saveCourse, setKV, type History } from "../lib/storage";
+import type { Course } from "../lib/types";
 import type { TopicId } from "../lib/types";
 
 export default function StudentDashboard() {
@@ -16,13 +16,16 @@ export default function StudentDashboard() {
   const [nickname, setNickname] = useState<string | null | undefined>(undefined);
   const [lastTopic, setLastTopic] = useState<TopicId | undefined>(undefined);
   const [draft, setDraft] = useState("");
-  const [mine, setMine] = useState<CustomPack[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [naming, setNaming] = useState(false);
+  const [courseName, setCourseName] = useState("");
+  const navigate = useNavigate();
 
   const refresh = () => {
     loadHistory().then(setHistory);
     getKV<string>("nickname").then((n) => setNickname(n ?? null));
     getKV<TopicId>("lastTopic").then(setLastTopic);
-    listPacks().then(setMine);
+    listCourses().then(setCourses);
   };
   useEffect(refresh, []);
 
@@ -71,25 +74,47 @@ export default function StudentDashboard() {
       <section className="mt-12">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="text-xl font-bold">Your own courses</h2>
-            <p className="text-[15px] text-navy-mute">Any subject: upload your course and past exams, and practice in your exam's format: multiple choice, written or oral.</p>
+            <h2 className="text-xl font-bold">My courses</h2>
+            <p className="text-[15px] text-navy-mute">One per course you're taking, any subject. Add lessons and past exams, practice lesson by lesson, or take a mock exam.</p>
           </div>
-          <Link to="/create" className="btn-violet"><FileUp size={17} aria-hidden /> Upload course material</Link>
+          {!naming && <button className="btn-violet" onClick={() => setNaming(true)}><Plus size={17} aria-hidden /> New course</button>}
         </div>
-        {mine.length > 0 && (
+        {naming && (
+          <form className="mt-4 flex max-w-lg gap-2" onSubmit={async (e) => {
+            e.preventDefault();
+            const name = courseName.trim().slice(0, 60);
+            if (!name) return;
+            const c = { id: newId("c"), name, created_at: new Date().toISOString(), lessons: [], past_exams: null, exam_profile: null, mocks: [] };
+            await saveCourse(c);
+            navigate(`/course/${c.id}`);
+          }}>
+            <label htmlFor="cname" className="sr-only">Course name</label>
+            <input id="cname" autoFocus value={courseName} onChange={(e) => setCourseName(e.target.value)} placeholder="e.g. Systems" maxLength={60}
+              className="min-h-[48px] flex-1 rounded-full border border-line bg-white px-5 outline-none focus:border-violet" />
+            <button className="btn-primary" disabled={!courseName.trim()}>Create</button>
+            <button type="button" className="btn-ghost" onClick={() => setNaming(false)}>Cancel</button>
+          </form>
+        )}
+        {courses.length > 0 && (
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {mine.map((p) => {
-              const current = isCurrentPack(p);
-              const r = current ? readiness(asPack(p), history, p.id) : null;
+            {courses.map((c) => {
+              const r = courseReadiness(c, history);
+              const lastMock = [...c.mocks].sort((a, b) => b.ts - a.ts)[0];
               return (
-                <Link key={p.id} to={`/mine/${p.id}`} className="rounded-xl border-2 border-line bg-white p-5 hover:border-navy">
-                  <p className="text-sm font-bold text-violet-ink">{p.format === "quiz" ? "Multiple choice" : p.format === "written" ? "Written exam" : "Oral exam"}{p.generator.test_mode && " (test mode)"}</p>
-                  <h3 className="mt-0.5 text-lg font-bold">{p.title}</h3>
-                  <p className="mt-1 text-[15px] text-navy-mute">{!current ? "Made with an older version" : r!.score !== null ? `Readiness ${r!.score}%` : `${p.exercises.length} questions`}</p>
+                <Link key={c.id} to={`/course/${c.id}`} className="rounded-xl border-2 border-line bg-white p-5 hover:border-navy">
+                  <h3 className="text-lg font-bold">{c.name}</h3>
+                  <p className="mt-1 text-[15px] text-navy-mute">{c.lessons.length} {c.lessons.length === 1 ? "lesson" : "lessons"}{c.past_exams ? ", past exams added" : ""}</p>
+                  <p className="mt-3 text-[15px]">
+                    {r.score !== null ? <>Readiness <b>{r.score}%</b></> : <span className="text-navy-mute">No readiness yet</span>}
+                    {lastMock && <span className="text-navy-mute">. Last mock {Math.round((100 * lastMock.score) / lastMock.max)}%</span>}
+                  </p>
                 </Link>
               );
             })}
           </div>
+        )}
+        {courses.length === 0 && !naming && (
+          <p className="mt-4 rounded-xl border border-dashed border-line bg-white p-5 text-navy-soft">No courses yet. Create one for each course you're taking, for example "Systems", then add its lessons.</p>
         )}
       </section>
 

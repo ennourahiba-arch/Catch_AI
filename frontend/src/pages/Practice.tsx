@@ -8,7 +8,7 @@ import { ErrorState, Loading } from "../components/States";
 import { usePack } from "../components/usePack";
 import { pickSession, readiness } from "../lib/readiness";
 import { addConfidence, loadHistory, setKV, type History } from "../lib/storage";
-import { asPack, type CustomPack, type Exercise, type Pack, type TopicId } from "../lib/types";
+import { lessonPack, type Course, type Exercise, type Format, type Lesson, type Pack, type Passage, type TopicId } from "../lib/types";
 
 const LABELS = ["Not at all", "A little", "Somewhat", "Quite", "Very"];
 
@@ -22,9 +22,10 @@ export default function PracticeCalculus() {
   return <PracticeSession pack={pack} topic={topic} />;
 }
 
-/** Practice on a pack made from uploaded material. */
-export function PracticeCustom({ custom }: { custom: CustomPack }) {
-  return <PracticeSession pack={asPack(custom)} topic={custom.id} custom={custom} backTo={`/mine/${custom.id}`} />;
+/** Practice one lesson of a course, in one format. */
+export function PracticeLesson({ course, lesson, format }: { course: Course; lesson: Lesson; format: Format }) {
+  return <PracticeSession pack={lessonPack(course, lesson, format)} topic={lesson.id} passages={lesson.passages}
+    backTo={`/course/${course.id}/lesson/${lesson.id}`} backLabel={`Back to ${lesson.title}`} />;
 }
 
 export function ConfidenceCheck({ title, last, onPick, backTo }: { title: string; last?: number; onPick: (n: number) => void; backTo: string }) {
@@ -47,7 +48,7 @@ export function ConfidenceCheck({ title, last, onPick, backTo }: { title: string
   );
 }
 
-function PracticeSession({ pack, topic, custom, backTo = "/student" }: { pack: Pack; topic: TopicId; custom?: CustomPack; backTo?: string }) {
+function PracticeSession({ pack, topic, passages, backTo = "/student", backLabel = "Back to dashboard" }: { pack: Pack; topic: TopicId; passages?: Passage[]; backTo?: string; backLabel?: string }) {
   const [history, setHistory] = useState<History | null>(null);
   const [stage, setStage] = useState<"confidence" | "questions" | "summary">("confidence");
   const [session, setSession] = useState<Exercise[]>([]);
@@ -65,7 +66,7 @@ function PracticeSession({ pack, topic, custom, backTo = "/student" }: { pack: P
     startedAt.current = Date.now();
     setStage("questions");
   };
-  const sourcesFor = (e: Exercise) => (custom?.passages ?? []).filter((p) => (e.source_ids ?? []).includes(p.id)).map((p) => p.text.slice(0, 1500));
+  const sourcesFor = (e: Exercise) => (passages ?? []).filter((p) => (e.source_ids ?? []).includes(p.id)).map((p) => p.text.slice(0, 1500));
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-24 pt-6">
@@ -73,7 +74,7 @@ function PracticeSession({ pack, topic, custom, backTo = "/student" }: { pack: P
         <ConfidenceCheck title={topicName.toLowerCase()} backTo={backTo} last={history.confidence.find((c) => c.topic === topic)?.rating}
           onPick={async (n) => {
             await addConfidence({ topic, ts: Date.now(), rating: n as 1 | 2 | 3 | 4 | 5 });
-            if (!custom) await setKV("lastTopic", topic);
+            if (!passages) await setKV("lastTopic", topic);
             begin(await reload());
           }} />
       )}
@@ -99,7 +100,7 @@ function PracticeSession({ pack, topic, custom, backTo = "/student" }: { pack: P
           <ReadinessCard r={readiness(pack, history, topic)} />
           <div className="flex flex-wrap gap-3">
             <button className="btn-primary" onClick={() => begin(history)}>Practice again</button>
-            <Link to={backTo} className="btn-ghost">{custom ? "Back to this course" : "Back to dashboard"}</Link>
+            <Link to={backTo} className="btn-ghost">{backLabel}</Link>
           </div>
         </div>
       )}

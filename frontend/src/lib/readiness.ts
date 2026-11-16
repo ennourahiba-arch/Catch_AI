@@ -1,6 +1,6 @@
 // Readiness per topic or pack, from the questions you answered yourself.
 import type { History } from "./storage";
-import type { Exercise, Pack, TopicId } from "./types";
+import type { Course, Exercise, Pack, TopicId } from "./types";
 
 export const WINDOW = 10;
 export const MIN_ANSWERED = 3;
@@ -62,4 +62,15 @@ export function pickSession(items: Exercise[], h: History, size = SESSION_SIZE):
     const [x, y] = [rank(a), rank(b)];
     return x[0] - y[0] || x[1] - y[1] || x[2] - y[2];
   }).slice(0, size);
+}
+
+/** Readiness across all lessons of a course (answers from every lesson count). */
+export function courseReadiness(course: Course, h: History): Readiness {
+  const ids = new Set(course.lessons.map((l) => l.id));
+  const mapped: History = {
+    exercises: h.exercises.filter((e) => ids.has(e.topic)).map((e) => ({ ...e, topic: course.id })),
+    confidence: h.confidence.filter((c) => ids.has(c.topic) || c.topic === course.id).map((c) => ({ ...c, topic: course.id })),
+  };
+  const pack: Pack = { pack_id: course.id, subject: course.name, pack_version: "custom", content_hash: course.id, topics: [{ id: course.id, name: course.name }], exercises: [] };
+  return readiness(pack, mapped, course.id);
 }

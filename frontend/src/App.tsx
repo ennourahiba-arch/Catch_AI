@@ -7,8 +7,10 @@ import ProfessorDashboard from "./pages/ProfessorDashboard";
 import Join from "./pages/Join";
 import TeamGame from "./pages/TeamGame";
 import HostRoom from "./pages/HostRoom";
-import Create from "./pages/Create";
-import MyPack, { PackPractice } from "./pages/MyPack";
+import CoursePage from "./pages/Course";
+import LessonPage from "./pages/Lesson";
+import LessonPractice from "./pages/LessonPractice";
+import MockPage from "./pages/Mock";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -23,9 +25,10 @@ export default function App() {
         <Route path="join/:code" element={<Join />} />
         <Route path="class/:code" element={<TeamGame />} />
         <Route path="host/:code" element={<HostRoom />} />
-        <Route path="create" element={<Create />} />
-        <Route path="mine/:packId" element={<MyPack />} />
-        <Route path="mine/:packId/practice" element={<PackPractice />} />
+        <Route path="course/:courseId" element={<CoursePage />} />
+        <Route path="course/:courseId/lesson/:lessonId" element={<LessonPage />} />
+        <Route path="course/:courseId/lesson/:lessonId/practice/:format" element={<LessonPractice />} />
+        <Route path="course/:courseId/mock" element={<MockPage />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
