@@ -7,6 +7,8 @@ import RichText from "../components/RichText";
 import { ErrorState, Loading } from "../components/States";
 import { usePack } from "../components/usePack";
 import { pickSession, readiness } from "../lib/readiness";
+import { DAILY_GOAL, streakInfo } from "../lib/streak";
+import { Flame } from "lucide-react";
 import { addConfidence, loadHistory, setKV, type History } from "../lib/storage";
 import { lessonPack, type Course, type Exercise, type Format, type Lesson, type Pack, type Passage, type TopicId } from "../lib/types";
 
@@ -96,6 +98,7 @@ function PracticeSession({ pack, topic, passages, backTo = "/student", backLabel
       {stage === "summary" && (
         <div className="mx-auto grid max-w-2xl gap-5 py-4">
           <h1 className="text-3xl font-bold">Session complete</h1>
+          <StreakLine history={history} />
           <SessionResults session={session} history={history} since={startedAt.current} />
           <ReadinessCard r={readiness(pack, history, topic)} />
           <div className="flex flex-wrap gap-3">
@@ -130,5 +133,19 @@ export function SessionResults({ session, history, since }: { session: Exercise[
         })}
       </ol>
     </section>
+  );
+}
+
+function StreakLine({ history }: { history: History }) {
+  const s = streakInfo(history.exercises);
+  return (
+    <p className="flex items-center gap-2 rounded-xl bg-coral-wash px-4 py-3 text-coral-ink" role="status">
+      <Flame size={20} aria-hidden fill={s.metToday ? "currentColor" : "none"} />
+      <span className="text-navy">
+        {s.metToday
+          ? <><b>{s.current}-day streak.</b> Today's goal is done.</>
+          : <><b>{Math.max(0, DAILY_GOAL - s.today)} more {DAILY_GOAL - s.today === 1 ? "answer" : "answers"}</b> today {s.atRisk ? "to keep your streak" : "to start a streak"}.</>}
+      </span>
+    </p>
   );
 }

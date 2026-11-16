@@ -75,3 +75,20 @@ def insights(per_q: list[dict[str, Any]], total: int) -> list[str]:
         label, n = labels.most_common(1)[0]
         lines.append(f"Most common mistake: \u201c{label}\u201d" + (f" (top wrong answer in {n} questions)." if n > 1 else "."))
     return lines
+
+
+# --- duels: two players, the first correct answer wins the point ---------------------
+
+def duel_point(answers: list[tuple[int, dict[str, Any]]]) -> int | None:
+    """answers: (team id, {"correct", "ms"}). Returns the team that answered correctly first, if any."""
+    right = [(a["ms"], tid) for tid, a in answers if a["correct"]]
+    return min(right)[1] if right else None
+
+
+def duel_scores(total: int, teams: list[dict[str, Any]]) -> dict[int, int]:
+    scores = {t["id"]: 0 for t in teams}
+    for i in range(total):
+        winner = duel_point([(t["id"], t["answers"][i]) for t in teams if i in t["answers"]])
+        if winner is not None:
+            scores[winner] += 1
+    return scores

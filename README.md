@@ -24,6 +24,9 @@ A mathematically verified Calculus 1 question bank works with no AI at all.
 | Live class quiz: QR join, per-question timer, reveal with answer breakdown, class summary, scores | Working |
 | Privacy: breakdowns and scores hidden below 3 teams; no accounts; uploads not stored on the server | Working |
 | Offline: installable app; Calculus and multiple-choice practice work with no internet | Working |
+| Light and dark themes (follows the device, or chosen in the header) | Working |
+| Duel: two phones, same questions, first correct answer wins the point; runs itself, link/QR invite | Working (needs the server) |
+| Daily streak: a day counts at 5 answers anywhere in the app; current and best streak, 7-day strip | Working (on this device) |
 
 ## Repository layout
 

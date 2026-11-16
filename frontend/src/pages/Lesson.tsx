@@ -115,7 +115,7 @@ export default function LessonPage() {
           {ai.status.test_mode && <p className="font-bold text-coral-ink">Test mode: the server uses a simulated AI, so questions will be placeholder text.</p>}
           {!ai.consent && (
             <label className="flex items-start gap-3">
-              <input type="checkbox" checked={ai.consent} onChange={(e) => ai.setConsent(e.target.checked)} className="mt-1 h-5 w-5 accent-[#5643DE]" />
+              <input type="checkbox" checked={ai.consent} onChange={(e) => ai.setConsent(e.target.checked)} className="mt-1 h-5 w-5 accent-violet-ink" />
               <span className="text-[15px]">I understand that creating questions sends this lesson's text (and the course's past exams) to {ai.provider}{ai.status.provider === "gemini" && ", which on Google's free tier may use it to improve its products"}. My material contains no personal data.</span>
             </label>
           )}

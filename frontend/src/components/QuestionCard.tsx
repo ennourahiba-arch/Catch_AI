@@ -265,8 +265,8 @@ function MultiQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
           return (
             <li key={i}>
               <button type="button" role="checkbox" aria-checked={on} disabled={!!done} onClick={() => toggle(i)}
-                className={`flex min-h-[56px] w-full items-center gap-3 rounded-xl border-2 bg-white px-4 py-3 text-left disabled:cursor-default
-                  ${right ? "border-teal bg-teal-wash" : wrong ? "border-coral bg-coral-wash" : on ? "border-navy" : "border-line hover:border-navy-mute"}`}>
+                className={`flex min-h-[56px] w-full items-center gap-3 rounded-xl border-2 px-4 py-3 text-left disabled:cursor-default
+                  ${right ? "border-teal bg-teal-wash" : wrong ? "border-coral bg-coral-wash" : on ? "border-navy bg-white" : "border-line bg-white hover:border-navy-mute"}`}>
                 <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 ${on ? "border-navy bg-navy" : "border-line"}`} aria-hidden>
                   {on && <Check size={14} className="text-white" strokeWidth={3} />}
                 </span>
@@ -315,8 +315,8 @@ function TFQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
           const wrong = pick === v && v !== value;
           return (
             <button key={String(v)} role="radio" aria-checked={pick === v} disabled={pick !== null} onClick={() => choose(v)}
-              className={`min-h-[72px] rounded-xl border-2 bg-white font-display text-xl font-bold disabled:cursor-default
-                ${right ? "border-teal bg-teal-wash text-teal-ink" : wrong ? "border-coral bg-coral-wash text-coral-ink" : "border-line hover:border-navy"}`}>
+              className={`min-h-[72px] rounded-xl border-2 font-display text-xl font-bold disabled:cursor-default
+                ${right ? "border-teal bg-teal-wash text-teal-ink" : wrong ? "border-coral bg-coral-wash text-coral-ink" : "border-line bg-white hover:border-navy"}`}>
               {v ? "True" : "False"}
             </button>
           );

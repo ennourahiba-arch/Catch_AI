@@ -139,7 +139,7 @@ function Setup({ course, onReady }: { course: Course; onReady: (e: ExamState) =>
           {course.lessons.map((l) => (
             <li key={l.id}>
               <label className="flex items-center gap-3">
-                <input type="checkbox" checked={lessons.includes(l.id)} disabled={!l.passages.length} className="h-5 w-5 accent-[#151631]"
+                <input type="checkbox" checked={lessons.includes(l.id)} disabled={!l.passages.length} className="h-5 w-5 accent-navy"
                   onChange={(e) => setLessons(e.target.checked ? [...lessons, l.id] : lessons.filter((x) => x !== l.id))} />
                 <span>{l.title}</span>
               </label>
@@ -173,7 +173,7 @@ function Setup({ course, onReady }: { course: Course; onReady: (e: ExamState) =>
         <div className="grid gap-3 rounded-xl border border-line bg-white p-5">
           {!ai.consent && (
             <label className="flex items-start gap-3">
-              <input type="checkbox" checked={ai.consent} onChange={(e) => ai.setConsent(e.target.checked)} className="mt-1 h-5 w-5 accent-[#5643DE]" />
+              <input type="checkbox" checked={ai.consent} onChange={(e) => ai.setConsent(e.target.checked)} className="mt-1 h-5 w-5 accent-violet-ink" />
               <span className="text-[15px]">I understand that this sends my lessons' text and past exams to {ai.provider}. My material contains no personal data.</span>
             </label>
           )}

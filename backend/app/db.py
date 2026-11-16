@@ -30,6 +30,8 @@ CREATE TABLE IF NOT EXISTS quiz_rooms (
   quiz_json TEXT NOT NULL,          -- the questions with their answer keys (deleted with the room)
   status TEXT NOT NULL,             -- lobby | question | reveal | finished
   q_index INTEGER NOT NULL DEFAULT 0,
+  mode TEXT NOT NULL DEFAULT 'class',   -- class | duel
+  reveal_until INTEGER,                 -- duel: when the reveal ends and the next question opens
   per_q_s INTEGER NOT NULL,
   deadline_ms INTEGER,
   created_ms INTEGER NOT NULL,
@@ -70,6 +72,10 @@ def conn() -> sqlite3.Connection:
         _conn.row_factory = sqlite3.Row
         _conn.execute("PRAGMA foreign_keys = ON")
         _conn.executescript(SCHEMA)
+        cols = {r[1] for r in _conn.execute("PRAGMA table_info(quiz_rooms)")}
+        for col, decl in (("mode", "TEXT NOT NULL DEFAULT 'class'"), ("reveal_until", "INTEGER")):
+            if col not in cols:  # databases created before duels existed
+                _conn.execute(f"ALTER TABLE quiz_rooms ADD COLUMN {col} {decl}")
     return _conn
 
 
@@ -92,13 +98,13 @@ def ex(sql: str, args: tuple = ()) -> sqlite3.Cursor:
 
 # --- rooms -----------------------------------------------------------------
 
-def create_room(title: str, quiz_json: str, per_q_s: int) -> tuple[str, str]:
+def create_room(title: str, quiz_json: str, per_q_s: int, mode: str = "class") -> tuple[str, str]:
     host_token = secrets.token_urlsafe(24)
     for _ in range(20):
         code = "".join(secrets.choice(CODE_ALPHABET) for _ in range(5))
         try:
-            ex("INSERT INTO quiz_rooms (code, host_hash, title, quiz_json, status, per_q_s, created_ms) VALUES (?,?,?,?,?,?,?)",
-               (code, hash_token(host_token), title, quiz_json, "lobby", per_q_s, now_ms()))
+            ex("INSERT INTO quiz_rooms (code, host_hash, title, quiz_json, status, per_q_s, created_ms, mode) VALUES (?,?,?,?,?,?,?,?)",
+               (code, hash_token(host_token), title, quiz_json, "lobby", per_q_s, now_ms(), mode))
             return code, host_token
         except sqlite3.IntegrityError:
             continue
@@ -124,12 +130,20 @@ def open_question(code: str, index: int, per_q_s: int) -> None:
        (index, now_ms() + per_q_s * 1000, code))
 
 
-def reveal(code: str) -> bool:
-    return ex("UPDATE quiz_rooms SET status='reveal', deadline_ms=NULL WHERE code=? AND status='question'", (code,)).rowcount > 0
+def reveal(code: str, hold_ms: int | None = None) -> bool:
+    """Close the current question. Duels pass hold_ms: the reveal then ends on its own."""
+    until = now_ms() + hold_ms if hold_ms else None
+    return ex("UPDATE quiz_rooms SET status='reveal', deadline_ms=NULL, reveal_until=? WHERE code=? AND status='question'",
+              (until, code)).rowcount > 0
 
 
 def finish(code: str) -> None:
     ex("UPDATE quiz_rooms SET status='finished', deadline_ms=NULL WHERE code=?", (code,))
+
+
+def duel_reveals_done() -> list[dict[str, Any]]:
+    return [dict(r) for r in q("SELECT code, q_index, per_q_s, quiz_json FROM quiz_rooms WHERE mode='duel' AND status='reveal' "
+                               "AND reveal_until IS NOT NULL AND reveal_until <= ?", (now_ms(),))]
 
 
 def overdue_rooms() -> list[str]:
@@ -147,9 +161,9 @@ class JoinError(ValueError):
     pass
 
 
-def add_team(code: str, name: str) -> tuple[int, str]:
-    if q("SELECT COUNT(*) AS n FROM quiz_teams WHERE room_code=?", (code,))[0]["n"] >= MAX_TEAMS:
-        raise JoinError("This room is full.")
+def add_team(code: str, name: str, limit: int = MAX_TEAMS) -> tuple[int, str]:
+    if q("SELECT COUNT(*) AS n FROM quiz_teams WHERE room_code=?", (code,))[0]["n"] >= limit:
+        raise JoinError("This duel already has two players." if limit == 2 else "This room is full.")
     token = secrets.token_urlsafe(24)
     try:
         cur = ex("INSERT INTO quiz_teams (room_code, name, name_key, token_hash, joined_ms) VALUES (?,?,?,?,?)",
@@ -169,8 +183,8 @@ def team_by_token(code: str, token: str | None) -> dict[str, Any] | None:
 def teams_with_answers(code: str) -> list[dict[str, Any]]:
     teams = {t["id"]: {"id": t["id"], "name": t["name"], "answers": {}}
              for t in q("SELECT id, name FROM quiz_teams WHERE room_code=? ORDER BY joined_ms", (code,))}
-    for a in q("SELECT a.team_id, a.q_index, a.choice, a.correct FROM answers a JOIN quiz_teams t ON t.id=a.team_id WHERE t.room_code=?", (code,)):
-        teams[a["team_id"]]["answers"][a["q_index"]] = {"choice": a["choice"], "correct": bool(a["correct"])}
+    for a in q("SELECT a.team_id, a.q_index, a.choice, a.correct, a.ms FROM answers a JOIN quiz_teams t ON t.id=a.team_id WHERE t.room_code=?", (code,)):
+        teams[a["team_id"]]["answers"][a["q_index"]] = {"choice": a["choice"], "correct": bool(a["correct"]), "ms": a["ms"]}
     return list(teams.values())
 
 

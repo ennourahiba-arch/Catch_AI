@@ -1,15 +1,19 @@
 /** @type {import('tailwindcss').Config} */
+// Colours are CSS variables (see src/index.css) so light and dark themes switch together.
+const v = (name) => `rgb(var(--${name}) / <alpha-value>)`;
+
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        navy: { DEFAULT: "#151631", soft: "#2B2D52", mute: "#5C5F80" },
-        violet: { DEFAULT: "#7765F6", ink: "#5643DE", wash: "#EEEBFE" },
-        teal: { DEFAULT: "#28C8B7", ink: "#0B7E72", wash: "#E2F7F4" },
-        coral: { DEFAULT: "#FF806D", ink: "#C2412D", wash: "#FFEDEA" },
-        paper: "#F7F8FC",
-        line: "#E3E5F0",
+        white: v("surface"),
+        navy: { DEFAULT: v("ink"), soft: v("ink-soft"), mute: v("ink-mute") },
+        violet: { DEFAULT: v("violet"), ink: v("violet-ink"), wash: v("violet-wash") },
+        teal: { DEFAULT: v("teal"), ink: v("teal-ink"), wash: v("teal-wash") },
+        coral: { DEFAULT: v("coral"), ink: v("coral-ink"), wash: v("coral-wash") },
+        paper: v("paper"),
+        line: v("line"),
       },
       fontFamily: {
         display: ['"Bricolage Grotesque"', "ui-sans-serif", "system-ui", "sans-serif"],

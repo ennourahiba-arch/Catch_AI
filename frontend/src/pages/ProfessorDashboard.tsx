@@ -80,7 +80,7 @@ export default function ProfessorDashboard() {
           return (
             <li key={e.id} className={`rounded-xl border-2 bg-white ${on ? "border-navy" : "border-line"}`}>
               <div className="flex items-start gap-3 p-4">
-                <input type="checkbox" checked={on} onChange={() => toggle(e.id)} aria-label={`Include: ${m.prompt}`} className="mt-1.5 h-5 w-5 shrink-0 accent-[#151631]" />
+                <input type="checkbox" checked={on} onChange={() => toggle(e.id)} aria-label={`Include: ${m.prompt}`} className="mt-1.5 h-5 w-5 shrink-0 accent-navy" />
                 <div className="min-w-0 flex-1">
                   <p className="font-bold">{m.prompt} <span className="ml-1 text-sm font-normal text-navy-mute">difficulty {e.difficulty}</span></p>
                   <TeX tex={e.latex} />

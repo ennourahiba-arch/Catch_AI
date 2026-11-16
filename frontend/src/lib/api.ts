@@ -23,6 +23,9 @@ export interface QuizSummary {
 }
 export interface RoomState {
   code: string; title: string; status: "lobby" | "question" | "reveal" | "finished";
+  mode?: "class" | "duel"; reveal_until?: number | null;
+  players?: { name: string; score: number; is_you: boolean; answered: boolean; was_right: boolean | null }[];
+  point_to?: string | null; winner?: string | null;
   q_index: number; total: number; per_q_s: number; deadline_ms: number | null; server_now_ms: number; version: number;
   team_count: number; role: "host" | "team" | "viewer";
   question?: { index: number; total: number; prompt: string; latex: string; options: QuizOption[] };
@@ -98,6 +101,8 @@ export const api = {
   // live class quiz
   createQuiz: (body: { title?: string; exercise_ids?: string[]; questions?: QuizQuestionIn[]; seconds_per_question: number }) =>
     call<{ code: string; host_token: string }>("/api/rooms", { method: "POST", body }),
+  createDuel: (body: { title?: string; player_name: string; exercise_ids?: string[]; questions?: QuizQuestionIn[]; seconds_per_question: number }) =>
+    call<{ code: string; host_token: string; team_token: string; team_name: string }>("/api/rooms", { method: "POST", body: { ...body, mode: "duel" } }),
   join: (code: string, team_name: string) =>
     call<{ team_token: string; team_name: string; code: string }>(`/api/rooms/${code}/join`, { method: "POST", body: { team_name } }),
   state: (code: string, auth: Auth) => call<RoomState>(`/api/rooms/${code}/state`, { auth }),

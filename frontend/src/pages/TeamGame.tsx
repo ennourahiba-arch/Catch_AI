@@ -26,6 +26,7 @@ function Game({ code, token }: { code: string; token: string }) {
     return <ErrorState message={error.message} onRetry={refresh} />;
   }
   if (!state) return <Loading label="Joining the quiz" />;
+  if (state.mode === "duel") return <Navigate to={`/duel/${code}`} replace />;
   if (!state.you) { tokens.clear("team", code); return <Navigate to={`/join/${code}`} replace />; }
   const you = state.you;
 
@@ -69,8 +70,8 @@ function Game({ code, token }: { code: string; token: string }) {
               return (
                 <li key={k}>
                   <button role="radio" aria-checked={mine} disabled={locked || busy} onClick={() => pick(k)}
-                    className={`flex min-h-[60px] w-full items-center gap-3 rounded-xl border-2 bg-white px-4 py-3 text-left transition-colors disabled:cursor-default
-                      ${right ? "border-teal bg-teal-wash" : wrongMine ? "border-coral bg-coral-wash" : mine ? "border-navy" : "border-line hover:border-navy-mute"}`}>
+                    className={`flex min-h-[60px] w-full items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-colors disabled:cursor-default
+                      ${right ? "border-teal bg-teal-wash" : wrongMine ? "border-coral bg-coral-wash" : mine ? "border-navy bg-white" : "border-line bg-white hover:border-navy-mute"}`}>
                     <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-display font-bold ${mine ? "bg-navy text-white" : "bg-paper"}`}>{LETTERS[k]}</span>
                     <span className="min-w-0 flex-1"><OptionBody o={o} /></span>
                     {right && <Check size={20} className="text-teal-ink" aria-label="correct answer" />}

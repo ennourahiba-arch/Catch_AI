@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Play, Plus, Users } from "lucide-react";
+import { Play, Plus, Swords, Users } from "lucide-react";
 import ReadinessCard from "../components/ReadinessCard";
+import StreakCard from "../components/StreakCard";
+import { streakInfo } from "../lib/streak";
 import OfflineStatus from "../components/OfflineStatus";
 import { ErrorState, Loading } from "../components/States";
 import { usePack } from "../components/usePack";
@@ -66,10 +68,13 @@ export default function StudentDashboard() {
           </div>
           <div className="flex flex-wrap gap-3">
             <Link to={`/practice/${continueTopic}`} className="btn-primary"><Play size={17} aria-hidden /> {anything ? "Continue practicing" : "Start practicing"}</Link>
-            <Link to="/join" className="btn-ghost"><Users size={17} aria-hidden /> Join class game</Link>
+            <Link to="/duel/new" className="btn-ghost"><Swords size={17} aria-hidden /> Duel a friend</Link>
+            <Link to="/join" className="btn-ghost"><Users size={17} aria-hidden /> Join with a code</Link>
           </div>
         </div>
       )}
+
+      {nickname !== null && <div className="mt-8"><StreakCard s={streakInfo(history.exercises)} /></div>}
 
       <section className="mt-12">
         <div className="flex flex-wrap items-end justify-between gap-3">

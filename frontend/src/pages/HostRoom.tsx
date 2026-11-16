@@ -58,7 +58,7 @@ function Host({ code, token }: { code: string; token: string }) {
               {state.question.options.map((o, k) => {
                 const right = state.status === "reveal" && state.result?.correct === k;
                 return (
-                  <li key={k} className={`flex items-start gap-3 rounded-xl border-2 bg-white p-4 text-lg ${right ? "border-teal bg-teal-wash" : "border-line"}`}>
+                  <li key={k} className={`flex items-start gap-3 rounded-xl border-2 p-4 text-lg ${right ? "border-teal bg-teal-wash" : "border-line bg-white"}`}>
                     <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-display font-bold ${right ? "bg-teal-ink text-white" : "bg-paper"}`}>{LETTERS[k]}</span>
                     <span className="min-w-0 pt-0.5"><OptionBody o={o} /></span>
                   </li>

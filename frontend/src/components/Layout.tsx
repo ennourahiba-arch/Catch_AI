@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { Wifi, WifiOff } from "lucide-react";
 import Logo from "./Logo";
+import ThemeToggle from "./ThemeToggle";
 
 function useOnline() {
   const [online, setOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);
@@ -34,6 +35,7 @@ export default function Layout() {
           <nav className="flex items-center gap-1">
             <NavLink to="/student" className={navCls}>Student</NavLink>
             <NavLink to="/professor" className={navCls}>Professor</NavLink>
+            <ThemeToggle />
             <span
               className={`ml-1 hidden items-center gap-1.5 rounded-full px-2.5 py-1 text-sm sm:inline-flex ${online ? "text-teal-ink" : "bg-coral-wash text-coral-ink"}`}
               role="status"

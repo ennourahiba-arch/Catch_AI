@@ -22,7 +22,7 @@ export default function FilePicker({ label, help, files, setFiles, max }: { labe
         onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
         onDragLeave={() => setDrag(false)}
         onDrop={(e) => { e.preventDefault(); setDrag(false); add(e.dataTransfer.files); }}
-        className={`mt-2 flex w-full flex-col items-center gap-1 rounded-xl border-2 border-dashed bg-white px-4 py-6 text-center transition-colors ${drag ? "border-violet bg-violet-wash/40" : "border-line hover:border-navy-mute"}`}
+        className={`mt-2 flex w-full flex-col items-center gap-1 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors ${drag ? "border-violet bg-violet-wash/40" : "border-line bg-white hover:border-navy-mute"}`}
       >
         <Upload size={22} className="text-navy-mute" aria-hidden />
         <span className="font-bold">Choose files or drop them here</span>

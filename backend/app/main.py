@@ -8,7 +8,7 @@ import asyncio
 import contextlib
 import json
 import os
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,7 +16,9 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from . import db, extract, genpack, llm, oral, ratelimit
 from .pack import calculus_question, get_exercise, load_pack, topic_name
-from .quiz import public_question, question_results, summary
+from .quiz import duel_point, duel_scores, public_question, question_results, summary
+
+DUEL_REVEAL_MS = 4500  # how long a duel shows the answer before the next question
 
 
 # --- live updates ----------------------------------------------------------
@@ -50,8 +52,11 @@ async def ticker() -> None:
         await asyncio.sleep(1)
         with contextlib.suppress(Exception):
             for code in db.overdue_rooms():
-                if db.reveal(code):
+                room = db.get_room(code)
+                if room and db.reveal(code, DUEL_REVEAL_MS if room["mode"] == "duel" else None):
                     await changed(code)
+            for room in db.duel_reveals_done():
+                await advance(room)
             n += 1
             if n % 60 == 0:
                 db.purge_expired()
@@ -80,11 +85,25 @@ def room_or_404(code: str) -> dict[str, Any]:
     return room
 
 
+async def advance(room: dict[str, Any]) -> None:
+    """From a reveal: open the next question, or finish after the last one."""
+    total = len(json.loads(room["quiz_json"]))
+    if room["q_index"] + 1 < total:
+        db.open_question(room["code"], room["q_index"] + 1, room["per_q_s"])
+    else:
+        db.finish(room["code"])
+    await changed(room["code"])
+
+
 async def settle(room: dict[str, Any]) -> dict[str, Any]:
-    """Apply the deadline immediately if the ticker hasn't yet."""
-    if room["status"] == "question" and room["deadline_ms"] and room["deadline_ms"] <= db.now_ms():
-        if db.reveal(room["code"]):
+    """Apply deadlines immediately if the ticker hasn't yet."""
+    now = db.now_ms()
+    if room["status"] == "question" and room["deadline_ms"] and room["deadline_ms"] <= now:
+        if db.reveal(room["code"], DUEL_REVEAL_MS if room["mode"] == "duel" else None):
             await changed(room["code"])
+    room = db.get_room(room["code"]) or room
+    if room["mode"] == "duel" and room["status"] == "reveal" and room["reveal_until"] and room["reveal_until"] <= now:
+        await advance(room)
         room = db.get_room(room["code"]) or room
     return room
 
@@ -94,7 +113,8 @@ def build_state(room: dict[str, Any], host: bool, team: dict[str, Any] | None) -
     teams = db.teams_with_answers(room["code"])
     i, total, status = room["q_index"], len(questions), room["status"]
     state: dict[str, Any] = {
-        "code": room["code"], "title": room["title"], "status": status,
+        "code": room["code"], "title": room["title"], "status": status, "mode": room["mode"],
+        "reveal_until": room["reveal_until"] if status == "reveal" else None,
         "q_index": i, "total": total, "per_q_s": room["per_q_s"],
         "deadline_ms": room["deadline_ms"], "server_now_ms": db.now_ms(), "version": room["version"],
         "team_count": len(teams), "role": "host" if host else "team" if team else "viewer",
@@ -108,6 +128,19 @@ def build_state(room: dict[str, Any], host: bool, team: dict[str, Any] | None) -
         state["teams"] = [{"name": t["name"], "answered": i in t["answers"] and status in ("question", "reveal")} for t in teams]
         if status == "finished":
             state["summary"] = summary(questions, teams)
+    if room["mode"] == "duel":
+        scores = duel_scores(total, teams)
+        state["players"] = [{"name": t["name"], "score": scores[t["id"]], "is_you": bool(team and t["id"] == team["id"]),
+                             "answered": i in t["answers"] and status in ("question", "reveal"),
+                             "was_right": t["answers"][i]["correct"] if status == "reveal" and i in t["answers"] else None}
+                            for t in teams]
+        if status == "reveal":
+            winner = duel_point([(t["id"], t["answers"][i]) for t in teams if i in t["answers"]])
+            state["point_to"] = next((t["name"] for t in teams if t["id"] == winner), None)
+        if status == "finished":
+            best = max(scores.values(), default=0)
+            leaders = [t["name"] for t in teams if scores[t["id"]] == best]
+            state["winner"] = leaders[0] if len(leaders) == 1 and best > 0 else None
     if team:
         mine = next((t for t in teams if t["id"] == team["id"]), {"answers": {}})["answers"]
         state["you"] = {
@@ -157,6 +190,8 @@ class QuestionIn(BaseModel):
 
 class CreateRoom(BaseModel):
     title: str = Field(default="Class quiz", max_length=80)
+    mode: Literal["class", "duel"] = "class"
+    player_name: str = Field(default="", max_length=40)   # duel: the creator also plays
     exercise_ids: list[str] = Field(default_factory=list, max_length=20)   # verified Calculus questions
     questions: list[QuestionIn] = Field(default_factory=list, max_length=20)  # approved uploaded questions
     seconds_per_question: int = Field(default=45, ge=15, le=180)
@@ -199,8 +234,15 @@ def create_room(body: CreateRoom) -> dict[str, Any]:
     if not 1 <= len(questions) <= 20:
         raise HTTPException(422, "Choose between 1 and 20 questions.")
     title = body.title
-    if body.exercise_ids and title == "Class quiz":
+    if body.exercise_ids and title in ("Class quiz", "Duel"):
         title = topic_name(get_exercise(body.exercise_ids[0])["topic"])
+    if body.mode == "duel":
+        name = " ".join(body.player_name.split())[:24]
+        if not name:
+            raise HTTPException(422, "Enter your name for the duel.")
+        code, host_token = db.create_room(title, json.dumps(questions), body.seconds_per_question, "duel")
+        _, team_token = db.add_team(code, name, limit=2)
+        return {"code": code, "host_token": host_token, "team_token": team_token, "team_name": name}
     code, host_token = db.create_room(title, json.dumps(questions), body.seconds_per_question)
     return {"code": code, "host_token": host_token}
 
@@ -211,7 +253,7 @@ async def join_room(code: str, body: JoinRoom) -> dict[str, Any]:
     if room["status"] == "finished":
         raise HTTPException(409, "This quiz has already finished.")
     try:
-        _, token = db.add_team(room["code"], body.team_name)
+        _, token = db.add_team(room["code"], body.team_name, limit=2 if room["mode"] == "duel" else db.MAX_TEAMS)
     except db.JoinError as e:
         raise HTTPException(409, str(e))
     await changed(room["code"])
@@ -229,7 +271,10 @@ async def start(code: str, x_host_token: str | None = Header(default=None)) -> d
     _host(room, x_host_token, "start")
     if room["status"] != "lobby":
         raise HTTPException(409, "This quiz has already started.")
-    if not db.teams_with_answers(room["code"]):
+    players = db.teams_with_answers(room["code"])
+    if room["mode"] == "duel" and len(players) < 2:
+        raise HTTPException(409, "Wait for your friend to join.")
+    if not players:
         raise HTTPException(409, "Wait for at least one team to join.")
     db.open_question(room["code"], 0, room["per_q_s"])
     await changed(room["code"])
@@ -243,7 +288,7 @@ async def next_step(code: str, x_host_token: str | None = Header(default=None)) 
     _host(room, x_host_token, "control")
     total = len(json.loads(room["quiz_json"]))
     if room["status"] == "question":
-        db.reveal(room["code"])
+        db.reveal(room["code"], DUEL_REVEAL_MS if room["mode"] == "duel" else None)
     elif room["status"] == "reveal":
         if room["q_index"] + 1 < total:
             db.open_question(room["code"], room["q_index"] + 1, room["per_q_s"])
@@ -274,6 +319,10 @@ async def answer(code: str, body: Answer, x_team_token: str | None = Header(defa
     if body.choice >= len(q["options"]):
         raise HTTPException(422, "That isn't one of the options.")
     if db.add_answer(team["id"], room["q_index"], body.choice, body.choice == q["correct"]):
+        if room["mode"] == "duel":  # both answered: no need to wait for the clock
+            everyone = db.teams_with_answers(room["code"])
+            if all(room["q_index"] in t["answers"] for t in everyone):
+                db.reveal(room["code"], DUEL_REVEAL_MS)
         await changed(room["code"])
     return build_state(db.get_room(room["code"]), host=False, team=team)
 

@@ -29,8 +29,8 @@ export default function OptionList({
             aria-checked={isSel}
             disabled={review}
             onClick={() => onSelect?.(o.id)}
-            className={`flex min-h-[56px] w-full items-center gap-3 rounded-xl border-2 bg-white px-4 py-3 text-left transition-colors disabled:cursor-default
-              ${isRight ? "border-teal bg-teal-wash" : isWrongSel ? "border-coral bg-coral-wash" : isSel ? "border-navy" : "border-line hover:border-navy-mute"}`}
+            className={`flex min-h-[56px] w-full items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-colors disabled:cursor-default
+              ${isRight ? "border-teal bg-teal-wash" : isWrongSel ? "border-coral bg-coral-wash" : isSel ? "border-navy bg-white" : "border-line bg-white hover:border-navy-mute"}`}
           >
             <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${isSel && !review ? "border-navy bg-navy" : isRight ? "border-teal-ink bg-teal-ink" : isWrongSel ? "border-coral-ink bg-coral-ink" : "border-line"}`} aria-hidden>
               {isRight && <Check size={14} className="text-white" strokeWidth={3} />}

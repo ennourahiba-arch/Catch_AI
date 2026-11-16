@@ -11,6 +11,8 @@ import CoursePage from "./pages/Course";
 import LessonPage from "./pages/Lesson";
 import LessonPractice from "./pages/LessonPractice";
 import MockPage from "./pages/Mock";
+import Duel from "./pages/Duel";
+import DuelNew from "./pages/DuelNew";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -29,6 +31,8 @@ export default function App() {
         <Route path="course/:courseId/lesson/:lessonId" element={<LessonPage />} />
         <Route path="course/:courseId/lesson/:lessonId/practice/:format" element={<LessonPractice />} />
         <Route path="course/:courseId/mock" element={<MockPage />} />
+        <Route path="duel/new" element={<DuelNew />} />
+        <Route path="duel/:code" element={<Duel />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
