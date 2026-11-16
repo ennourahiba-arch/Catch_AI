@@ -5,13 +5,16 @@
 Students create a course for each subject they take (e.g. "Systems"), add its lessons and past exams, and either
 practice one lesson in a chosen format (multiple choice, written or oral) or take a timed mock exam across all lessons.
 Professors run live class quizzes and see, after every question, what the room got wrong and why.
-A mathematically verified Calculus 1 question bank works with no AI at all.
+The home page has a try-it-now demo with mathematically verified Calculus 1 questions (multiple choice, typed answer,
+true/false), which also serve as ready-made questions for class quizzes and duels. The app is in English, French and Italian.
 
 ## What works
 
 | Area | Status |
 |---|---|
-| Calculus 1 bank: 33 SymPy-verified questions in 4 topics, typed answers checked exactly in the browser | Working |
+| Home page demo: verified Calculus questions in 3 formats (multiple choice, typed, true/false), answerable in place | Working |
+| Calculus 1 bank (33 SymPy-verified questions) as ready-made questions for class quizzes and duels | Working |
+| Interface in English, French and Italian, picker in the header; Calculus content translated exactly | Working |
 | Multiple-choice versions of every Calculus question; each wrong option comes from a named common mistake | Working |
 | Practice sessions: confidence check, 5 questions, hints, worked solutions, readiness, recurring mistake | Working |
 | Courses → lessons: upload each lesson's material (PDF, Word, PowerPoint, text); past exams per course | Working |
@@ -106,6 +109,15 @@ start `uvicorn app.main:app --host 0.0.0.0 --port $PORT --no-access-log`. Enviro
 
 Render's free plan sleeps after 15 idle minutes (first request takes about a minute) and loses open quizzes on restart.
 Open `/api/health` a few minutes before a demo.
+
+## Languages
+
+The interface is in English, French and Italian (`frontend/src/i18n/`). English text is the key; `fr.ts` and `it.ts`
+hold the translations, with `{placeholders}` and `singular|plural` forms chosen by each language's plural rules.
+`npm run check` fails if any visible text is not wrapped in `t()`, if a key has no French or Italian entry, or if a
+translation drops a placeholder. The Calculus bank's texts are translated exactly in `content/rehearsal/i18n.py`
+(the pack build fails on any untranslated string). Questions generated from uploads stay in the language of the
+uploaded material; AI feedback follows the language of the student's answer.
 
 ## Known limitations
 
