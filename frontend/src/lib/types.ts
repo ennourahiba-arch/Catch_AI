@@ -6,7 +6,11 @@ export type ExerciseAnswer =
   | { kind: "points"; values: string[] }
   | { kind: "extremum"; extremum: "max" | "min"; value: string; at: string[] }
   | { kind: "mcq"; correct: number }
-  | { kind: "open"; key_points: string[]; model_answer: string };
+  | { kind: "multi"; correct: number[] }
+  | { kind: "tf"; value: boolean }
+  | { kind: "blank"; accepted: string[] }
+  | { kind: "match"; pairs: { left: string; right: string }[] }
+  | { kind: "open"; key_points: string[]; model_answer: string; problem?: boolean; final_answer?: string | null };
 
 export interface SolutionLine { text: string; latex: string; quote?: string; source?: string }
 
@@ -21,7 +25,9 @@ export interface Exercise {
   input_help: string;
   hint: string;
   solution: SolutionLine[];
-  /** uploaded multiple choice */
+  /** which exam format this question belongs to (uploaded material) */
+  format?: Format;
+  /** uploaded multiple choice / multiple response / true-false */
   options?: string[];
   labels?: (string | null)[];
   answer_text?: string;
@@ -43,12 +49,26 @@ export interface Pack {
 
 export interface ExamProfile {
   question_types: string[];
+  /** questions per format in a typical past exam, e.g. { quiz: 10, tf: 5 } */
+  parts?: Partial<Record<Format, number>>;
   duration_minutes: number | null;
   number_of_questions: number | null;
   notes: string;
 }
 
-export type Format = "quiz" | "written" | "oral";
+export type Format = "quiz" | "multi" | "tf" | "blank" | "match" | "short" | "written" | "oral";
+
+export const FORMAT_INFO: Record<Format, { name: string; exact: boolean; text: string; counts: number[] }> = {
+  quiz: { name: "Multiple choice", exact: true, text: "One correct option out of four. Wrong options are real student mistakes.", counts: [8, 12, 16, 20] },
+  multi: { name: "Multiple response", exact: true, text: "Select every correct option. Partial credit for partly right answers.", counts: [6, 10, 14] },
+  tf: { name: "True / False", exact: true, text: "Decide whether each statement is correct. Quick checks of key facts.", counts: [10, 15, 20] },
+  blank: { name: "Fill in the blanks", exact: true, text: "Type the missing term or value. Common synonyms are accepted.", counts: [8, 12, 16] },
+  match: { name: "Matching", exact: true, text: "Match terms with definitions, examples or properties.", counts: [4, 6, 8] },
+  short: { name: "Short answer", exact: false, text: "A definition, brief explanation or one-step calculation, graded against your lesson.", counts: [6, 8, 10] },
+  written: { name: "Long answer & problems", exact: false, text: "Structured explanations and worked problems, marked point by point.", counts: [4, 6, 8] },
+  oral: { name: "Oral", exact: false, text: "An examiner asks you questions in a chat. Answer by typing or speaking.", counts: [5, 7, 10] },
+};
+export const FORMAT_ORDER: Format[] = ["quiz", "multi", "tf", "blank", "match", "short", "written", "oral"];
 export interface Passage { id: string; file: string; text: string }
 
 /** Questions generated for one lesson in one format. */

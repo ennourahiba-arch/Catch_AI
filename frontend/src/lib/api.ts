@@ -89,13 +89,12 @@ export const api = {
   },
   generate: (format: string, passages: Passage[], past_exams: string, count: number) =>
     call<import("./types").CustomPack>("/api/generate", { method: "POST", body: { format, passages, past_exams, count } }),
-  grade: (body: { question: string; key_points: string[]; model_answer: string; sources: string[]; answer: string }) =>
+  grade: (body: { question: string; key_points: string[]; model_answer: string; sources: string[]; answer: string; final_answer?: string }) =>
     call<{ verdict: "correct" | "partial" | "incorrect"; covered: number[]; feedback: string }>("/api/grade", { method: "POST", body }),
   examiner: (question: { question: string; key_points: string[]; model_answer: string; quote: string }, history: ChatMsg[]) =>
     call<{ reply: string; closed: boolean; score: number | null }>("/api/oral/examiner", { method: "POST", body: { question, history } }),
-  mockExam: (body: { passages: Passage[]; past_exams: string; mcq: number; written: number }) =>
-    call<{ mcq: import("./types").CustomPack | null; written: import("./types").CustomPack | null; exam_profile: import("./types").ExamProfile | null; errors: string[] }>(
-      "/api/mock-exam", { method: "POST", body }),
+  mockExam: (body: { passages: Passage[]; past_exams: string; parts: Partial<Record<string, number>> }) =>
+    call<import("./types").CustomPack>("/api/mock-exam", { method: "POST", body }),
   // live class quiz
   createQuiz: (body: { title?: string; exercise_ids?: string[]; questions?: QuizQuestionIn[]; seconds_per_question: number }) =>
     call<{ code: string; host_token: string }>("/api/rooms", { method: "POST", body }),

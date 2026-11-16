@@ -6,11 +6,12 @@ import RichText from "./RichText";
 import TeX from "./Math";
 import { api } from "../lib/api";
 import { addExerciseAttempt } from "../lib/storage";
+import { gradeBlank, gradeMatch, gradeMulti, shuffled } from "../lib/grading";
 import type { Exercise, SolutionLine } from "../lib/types";
 
 interface CardProps { exercise: Exercise; index: number; total: number; onNext: () => void; nextLabel: string; sources?: string[] }
 
-/** One practice question, in the format of the exam: typed maths, multiple choice, or a written answer. */
+/** One practice question, in the format of the exam. */
 export default function QuestionCard({ exercise, index, total, onNext, nextLabel, sources }: CardProps) {
   const header = (
     <div className="flex items-baseline justify-between gap-3">
@@ -20,6 +21,10 @@ export default function QuestionCard({ exercise, index, total, onNext, nextLabel
   );
   const p = { exercise, onDone: onNext, header, nextLabel };
   if (exercise.answer.kind === "mcq") return <McqQuestion {...p} />;
+  if (exercise.answer.kind === "multi") return <MultiQuestion {...p} />;
+  if (exercise.answer.kind === "tf") return <TFQuestion {...p} />;
+  if (exercise.answer.kind === "blank") return <BlankQuestion {...p} />;
+  if (exercise.answer.kind === "match") return <MatchQuestion {...p} />;
   if (exercise.answer.kind === "open") return <OpenQuestion {...p} sources={sources ?? []} />;
   return <MathYourTurn {...p} />;
 }
@@ -118,7 +123,7 @@ function McqQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
 }
 
 function OpenQuestion({ exercise, onDone, header, nextLabel, sources }: BodyProps & { sources: string[] }) {
-  const a = exercise.answer as { kind: "open"; key_points: string[]; model_answer: string };
+  const a = exercise.answer as { kind: "open"; key_points: string[]; model_answer: string; problem?: boolean; final_answer?: string | null };
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -128,7 +133,8 @@ function OpenQuestion({ exercise, onDone, header, nextLabel, sources }: BodyProp
   async function gradeWithAI() {
     setBusy(true); setErr(null);
     try {
-      const r = await api.grade({ question: exercise.prompt, key_points: a.key_points, model_answer: a.model_answer, sources, answer: text });
+      const r = await api.grade({ question: exercise.prompt, key_points: a.key_points, model_answer: a.model_answer, sources, answer: text,
+        final_answer: a.final_answer ?? "" });
       setResult(r);
       record(r.verdict !== "incorrect", 1, false, r.verdict === "correct");
     } catch (e) {
@@ -178,7 +184,9 @@ function OpenQuestion({ exercise, onDone, header, nextLabel, sources }: BodyProp
             {result.self ? "You marked this yourself." : result.feedback}
           </Verdict>
           <section className="rounded-xl border border-line bg-white p-5">
-            <h2 className="text-lg font-bold">What a full answer contains</h2>
+            <h2 className="text-lg font-bold">
+              What a full answer contains{!result.self && a.key_points.length > 1 && <span className="ml-2 font-normal text-navy-mute">({result.covered.length} of {a.key_points.length} marks)</span>}
+            </h2>
             <ul className="mt-2 grid gap-1.5">
               {a.key_points.map((k, i) => (
                 <li key={i} className="flex gap-2">
@@ -191,8 +199,246 @@ function OpenQuestion({ exercise, onDone, header, nextLabel, sources }: BodyProp
             </ul>
           </section>
           <WorkedSolution lines={exercise.solution} title="Model answer" />
+          {a.problem && <p className="text-sm text-navy-mute">The model answer to this problem was computed by AI and solved a second time independently to check it. If something looks off, trust your course.</p>}
           {!result.self && <p className="text-sm text-navy-mute">Graded by AI against your course material. It can make mistakes: check the model answer.</p>}
           <button className="btn-primary justify-self-start" onClick={onDone}>{nextLabel}</button>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- exact formats
+
+function Prompt({ text }: { text: string }) {
+  return <section className="rounded-xl border border-line bg-white p-5"><RichText text={text} className="text-lg" /></section>;
+}
+
+function HintLine({ exercise, shown, onShow }: { exercise: Exercise; shown: boolean; onShow: () => void }) {
+  return shown
+    ? <p className="flex gap-2"><Lightbulb size={18} className="mt-0.5 shrink-0 text-violet-ink" aria-hidden /><span><b>Hint.</b> {exercise.hint}</span></p>
+    : <button className="justify-self-start font-bold text-violet-ink underline decoration-2 underline-offset-4" onClick={onShow}>Need a hint?</button>;
+}
+
+function Done({ ok, children, exercise, onDone, nextLabel }: { ok: boolean; children: React.ReactNode; exercise: Exercise; onDone: () => void; nextLabel: string }) {
+  return (
+    <>
+      <Verdict ok={ok}>{children}</Verdict>
+      <WorkedSolution lines={exercise.solution} title="Why" />
+      <button className="btn-primary justify-self-start" onClick={onDone}>{nextLabel}</button>
+    </>
+  );
+}
+
+function MultiQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
+  const correct = (exercise.answer as { kind: "multi"; correct: number[] }).correct;
+  const opts = exercise.options ?? [];
+  const [sel, setSel] = useState<number[]>([]);
+  const [tries, setTries] = useState(0);
+  const [hint, setHint] = useState(false);
+  const [done, setDone] = useState<null | ReturnType<typeof gradeMulti>>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const record = useRecorder(exercise);
+  const toggle = (i: number) => setSel((s) => (s.includes(i) ? s.filter((x) => x !== i) : [...s, i]));
+  function check() {
+    const g = gradeMulti(sel, correct);
+    const n = tries + 1;
+    setTries(n);
+    if (g.exact || n >= 2) {
+      setDone(g);
+      const wrongPick = sel.find((i) => !correct.includes(i));
+      record(g.exact, n, hint, g.exact && n === 1, g.exact ? null : wrongPick !== undefined ? exercise.labels?.[wrongPick] ?? null : null);
+    } else {
+      setFeedback(`Not quite: ${g.right} of your ${sel.length} ${sel.length === 1 ? "choice is" : "choices are"} right${g.missed ? `, and ${g.missed === 1 ? "one correct option is" : `${g.missed} correct options are`} missing` : ""}. One more try.`);
+    }
+  }
+  return (
+    <div className="grid gap-5">
+      {header}
+      <Prompt text={exercise.prompt} />
+      <p className="text-[15px] text-navy-mute">Select every correct answer.</p>
+      <ul className="grid gap-2.5">
+        {opts.map((o, i) => {
+          const on = sel.includes(i);
+          const right = done && correct.includes(i);
+          const wrong = done && on && !correct.includes(i);
+          return (
+            <li key={i}>
+              <button type="button" role="checkbox" aria-checked={on} disabled={!!done} onClick={() => toggle(i)}
+                className={`flex min-h-[56px] w-full items-center gap-3 rounded-xl border-2 bg-white px-4 py-3 text-left disabled:cursor-default
+                  ${right ? "border-teal bg-teal-wash" : wrong ? "border-coral bg-coral-wash" : on ? "border-navy" : "border-line hover:border-navy-mute"}`}>
+                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 ${on ? "border-navy bg-navy" : "border-line"}`} aria-hidden>
+                  {on && <Check size={14} className="text-white" strokeWidth={3} />}
+                </span>
+                <span className="min-w-0 flex-1"><RichText text={o} /></span>
+                {done && !correct.includes(i) && on && exercise.labels?.[i] && <span className="text-sm text-coral-ink">{exercise.labels[i]}</span>}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {done ? (
+        <Done ok={done.exact} exercise={exercise} onDone={onDone} nextLabel={nextLabel}>
+          {done.exact ? <b>All correct{tries === 1 ? ", first try" : ""}.</b> : <><b>The correct answers are {exercise.answer_text}.</b> You got {Math.round(done.fraction * 100)}% of the credit.</>}
+        </Done>
+      ) : (
+        <>
+          {feedback && <Verdict ok={false}>{feedback}</Verdict>}
+          {tries > 0 && <HintLine exercise={exercise} shown={hint} onShow={() => setHint(true)} />}
+          <div className="flex flex-wrap gap-3">
+            <button className="btn-primary" disabled={!sel.length} onClick={check}>Check my answer</button>
+            <button className="btn-ghost" onClick={() => { setDone(gradeMulti([], correct)); record(false, tries, hint); }}>I'm stuck, show the answer</button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function TFQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
+  const value = (exercise.answer as { kind: "tf"; value: boolean }).value;
+  const [pick, setPick] = useState<boolean | null>(null);
+  const record = useRecorder(exercise);
+  const choose = (v: boolean) => {
+    if (pick !== null) return;
+    setPick(v);
+    const ok = v === value;
+    record(ok, 1, false, ok, ok ? null : exercise.labels?.[v ? 0 : 1] ?? null);
+  };
+  return (
+    <div className="grid gap-5">
+      {header}
+      <Prompt text={exercise.prompt} />
+      <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="True or false">
+        {[true, false].map((v) => {
+          const right = pick !== null && v === value;
+          const wrong = pick === v && v !== value;
+          return (
+            <button key={String(v)} role="radio" aria-checked={pick === v} disabled={pick !== null} onClick={() => choose(v)}
+              className={`min-h-[72px] rounded-xl border-2 bg-white font-display text-xl font-bold disabled:cursor-default
+                ${right ? "border-teal bg-teal-wash text-teal-ink" : wrong ? "border-coral bg-coral-wash text-coral-ink" : "border-line hover:border-navy"}`}>
+              {v ? "True" : "False"}
+            </button>
+          );
+        })}
+      </div>
+      {pick !== null && (
+        <Done ok={pick === value} exercise={exercise} onDone={onDone} nextLabel={nextLabel}>
+          <b>{pick === value ? "Correct." : `It's ${value ? "true" : "false"}.`}</b>
+          {pick !== value && exercise.labels?.[pick ? 0 : 1] && <> A common trap: {exercise.labels[pick ? 0 : 1]!.toLowerCase()}.</>}
+        </Done>
+      )}
+    </div>
+  );
+}
+
+function BlankQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
+  const accepted = (exercise.answer as { kind: "blank"; accepted: string[] }).accepted;
+  const [before, after] = exercise.prompt.split("____");
+  const [text, setText] = useState("");
+  const [tries, setTries] = useState(0);
+  const [hint, setHint] = useState(false);
+  const [done, setDone] = useState<null | "right" | "wrong" | "self">(null);
+  const record = useRecorder(exercise);
+  function check(e: React.FormEvent) {
+    e.preventDefault();
+    const n = tries + 1;
+    setTries(n);
+    if (gradeBlank(text, accepted)) { setDone("right"); record(true, n, hint); }
+    else if (n >= 2) { setDone("wrong"); record(false, n, hint); }
+  }
+  return (
+    <div className="grid gap-5">
+      {header}
+      <section className="rounded-xl border border-line bg-white p-5 text-lg leading-relaxed">
+        <RichText text={before ?? ""} />
+        <span className={`mx-1 inline-block min-w-[6rem] border-b-2 px-1 font-bold ${done === "right" || done === "self" ? "border-teal text-teal-ink" : done ? "border-coral text-coral-ink" : "border-navy"}`}>
+          {done ? (done === "wrong" ? accepted[0] : text) : text || "\u00a0"}
+        </span>
+        <RichText text={after ?? ""} />
+      </section>
+      {!done ? (
+        <form onSubmit={check} className="grid gap-3">
+          <label className="grid gap-1.5">
+            <span className="font-bold">The missing word or phrase</span>
+            <input value={text} onChange={(e) => setText(e.target.value.slice(0, 200))} autoComplete="off" autoCapitalize="off"
+              className="min-h-[52px] rounded-xl border border-line bg-white px-4 text-lg outline-none focus:border-violet" />
+          </label>
+          {tries > 0 && <Verdict ok={false}><b>Not that.</b> One more try.</Verdict>}
+          {tries > 0 && <HintLine exercise={exercise} shown={hint} onShow={() => setHint(true)} />}
+          <div className="flex flex-wrap gap-3">
+            <button className="btn-primary" disabled={!text.trim()}>Check my answer</button>
+            <button type="button" className="btn-ghost" onClick={() => { setDone("wrong"); record(false, tries, hint); }}>I'm stuck, show the answer</button>
+          </div>
+        </form>
+      ) : (
+        <>
+          <Done ok={done !== "wrong"} exercise={exercise} onDone={onDone} nextLabel={nextLabel}>
+            {done === "right" ? <b>Correct{tries === 1 ? ", first try" : ""}.</b>
+              : done === "self" ? <><b>Noted.</b> Your readiness still counts this one as missed, because it couldn't be checked exactly.</>
+              : <><b>The answer is "{accepted[0]}".</b>{accepted.length > 1 && <> Also accepted: {accepted.slice(1).join(", ")}.</>}</>}
+          </Done>
+          {done === "wrong" && text.trim() && (
+            <button className="justify-self-start text-[15px] font-bold text-navy-mute underline underline-offset-4"
+              onClick={() => { setDone("self"); }}>My answer "{text.trim()}" means the same thing</button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function MatchQuestion({ exercise, onDone, header, nextLabel }: BodyProps) {
+  const pairs = (exercise.answer as { kind: "match"; pairs: { left: string; right: string }[] }).pairs;
+  const rights = shuffled(pairs.map((p) => p.right), exercise.id);
+  const [chosen, setChosen] = useState<(string | null)[]>(pairs.map(() => null));
+  const [tries, setTries] = useState(0);
+  const [done, setDone] = useState<null | ReturnType<typeof gradeMatch>>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const record = useRecorder(exercise);
+  function check() {
+    const g = gradeMatch(chosen, pairs);
+    const n = tries + 1;
+    setTries(n);
+    if (g.exact || n >= 2) { setDone(g); record(g.exact, n, false); }
+    else setFeedback(`${g.right} of ${g.total} are right. One more try.`);
+  }
+  return (
+    <div className="grid gap-5">
+      {header}
+      <Prompt text={exercise.prompt} />
+      <ul className="grid gap-3">
+        {pairs.map((p, i) => {
+          const ok = done && chosen[i] === p.right;
+          return (
+            <li key={i} className={`grid gap-2 rounded-xl border-2 bg-white p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] sm:items-center ${done ? (ok ? "border-teal" : "border-coral") : "border-line"}`}>
+              <span className="font-bold"><RichText text={p.left} /></span>
+              {done ? (
+                <span className="text-[15px]">
+                  {ok ? <RichText text={p.right} /> : <><span className="text-coral-ink line-through">{chosen[i] ?? "no answer"}</span><br /><RichText text={p.right} /></>}
+                </span>
+              ) : (
+                <select value={chosen[i] ?? ""} onChange={(e) => setChosen(chosen.map((c, k) => (k === i ? e.target.value || null : c)))}
+                  aria-label={`Match for ${p.left}`} className="min-h-[48px] w-full rounded-lg border border-line bg-white px-3">
+                  <option value="">Choose…</option>
+                  {rights.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {done ? (
+        <Done ok={done.exact} exercise={exercise} onDone={onDone} nextLabel={nextLabel}>
+          <b>{done.exact ? `All matched${tries === 1 ? ", first try" : ""}.` : `${done.right} of ${done.total} matched.`}</b>
+        </Done>
+      ) : (
+        <>
+          {feedback && <Verdict ok={false}>{feedback}</Verdict>}
+          <div className="flex flex-wrap gap-3">
+            <button className="btn-primary" disabled={chosen.some((c) => !c)} onClick={check}>Check my answer</button>
+            <button className="btn-ghost" onClick={() => { setDone(gradeMatch(pairs.map(() => null), pairs)); record(false, tries, false); }}>I'm stuck, show the answer</button>
+          </div>
         </>
       )}
     </div>

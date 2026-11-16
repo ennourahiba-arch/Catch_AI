@@ -50,11 +50,12 @@ class ExaminerTurn(BaseModel):
 
 
 class GradeRequest(BaseModel):
-    question: str = Field(max_length=600)
+    question: str = Field(max_length=1200)
     key_points: list[str] = Field(max_length=6)
-    model_answer: str = Field(max_length=2000)
+    model_answer: str = Field(max_length=3000)
     sources: list[str] = Field(default_factory=list, max_length=3)
-    answer: str = Field(min_length=1, max_length=5000)
+    answer: str = Field(min_length=1, max_length=6000)
+    final_answer: str = Field(default="", max_length=300)
 
 
 def _transcript(history: list[Msg]) -> str:
@@ -100,8 +101,10 @@ async def grade(g: GradeRequest) -> dict[str, Any]:
         "TASK: grade_answer\nYou grade a student's written exam answer against the answer key and sources. "
         "Be fair: accept paraphrases and any language, reward correct ideas, penalise errors. Return only JSON."
     )
+    expected = (f"EXPECTED FINAL RESULT: {g.final_answer} (accept equivalent units and rounding; the final result only "
+                "counts if the student's working supports it)\n") if g.final_answer else ""
     user = (
-        f"QUESTION: {g.question}\nKEY POINTS: {g.key_points}\nMODEL ANSWER: {g.model_answer}\nSOURCES: {g.sources}\n\n"
+        f"QUESTION: {g.question}\nKEY POINTS: {g.key_points}\nMODEL ANSWER: {g.model_answer}\nSOURCES: {g.sources}\n{expected}\n"
         f"STUDENT ANSWER:\n{g.answer}\n\n"
         'Return {"verdict": "correct|partial|incorrect", "covered": [indexes of key points covered], "feedback": "2-4 sentences"}'
     )

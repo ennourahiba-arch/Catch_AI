@@ -372,7 +372,7 @@ class GenerateIn(BaseModel):
     format: genpack.Format
     passages: list[PassageIn] = Field(min_length=1, max_length=150)
     past_exams: str = Field(default="", max_length=30000)
-    count: int = Field(default=10, ge=3, le=20)
+    count: int = Field(default=10, ge=2, le=20)
 
 
 @app.post("/api/generate")
@@ -382,7 +382,7 @@ async def generate(body: GenerateIn, request: Request) -> dict[str, Any]:
     if sum(len(p["text"]) for p in passages) > extract.MAX_MATERIAL_CHARS + 5000:
         raise HTTPException(413, "That's too much material for one pack. Upload fewer chapters at a time.")
     try:
-        return await genpack.generate(body.format, passages, body.past_exams, body.count)
+        return await genpack.generate({body.format: body.count}, passages, body.past_exams)
     except (llm.LLMError, genpack.GenerationError) as e:
         raise _ai_error(e)
 
@@ -390,34 +390,33 @@ async def generate(body: GenerateIn, request: Request) -> dict[str, Any]:
 class MockIn(BaseModel):
     passages: list[PassageIn] = Field(min_length=1, max_length=200)
     past_exams: str = Field(default="", max_length=30000)
-    mcq: int = Field(default=10, ge=0, le=25)
-    written: int = Field(default=3, ge=0, le=8)
+    parts: dict[str, int] = Field(default_factory=dict)
+
+    @field_validator("parts")
+    @classmethod
+    def check_parts(cls, v: dict[str, int]) -> dict[str, int]:
+        v = {k: n for k, n in v.items() if n}
+        if any(k not in genpack.FORMATS or k == "oral" for k in v):
+            raise ValueError("Unknown question format for a written mock exam.")
+        if any(not 0 < n <= 25 for n in v.values()) or sum(v.values()) > 40:
+            raise ValueError("A mock exam can have up to 40 questions (25 per format).")
+        return v
 
 
 @app.post("/api/mock-exam")
 async def mock_exam(body: MockIn, request: Request) -> dict[str, Any]:
-    """Questions for a timed mock exam across several lessons: a multiple-choice part
-    and a written part, generated in parallel with the same checks as practice questions."""
-    if body.mcq + body.written == 0:
+    """A timed mock exam across several lessons, in any mix of formats: one generation
+    call plus one review call, with the same checks as practice questions."""
+    if not body.parts:
         raise HTTPException(422, "Choose at least one question.")
     ratelimit.check(request, "generate")
     passages = [p.model_dump() for p in body.passages]
     if sum(len(p["text"]) for p in passages) > extract.MAX_MATERIAL_CHARS + 5000:
         raise HTTPException(413, "That's too much material for one exam. Choose fewer lessons.")
-    parts = [("quiz", body.mcq), ("written", body.written)]
-    jobs = [genpack.generate(fmt, passages, body.past_exams, n) for fmt, n in parts if n > 0]
-    results = await asyncio.gather(*jobs, return_exceptions=True)
-    out: dict[str, Any] = {"mcq": None, "written": None, "exam_profile": None, "errors": []}
-    for (fmt, n), res in zip([p for p in parts if p[1] > 0], results):
-        key = "mcq" if fmt == "quiz" else "written"
-        if isinstance(res, Exception):
-            out["errors"].append(str(res) if isinstance(res, (llm.LLMError, genpack.GenerationError)) else "generation failed")
-        else:
-            out[key] = res
-            out["exam_profile"] = out["exam_profile"] or res.get("exam_profile")
-    if not out["mcq"] and not out["written"]:
-        raise _ai_error(results[0]) if isinstance(results[0], (llm.LLMError, genpack.GenerationError)) else HTTPException(500, "Generation failed. Try again.")
-    return out
+    try:
+        return await genpack.generate(body.parts, passages, body.past_exams)
+    except (llm.LLMError, genpack.GenerationError) as e:
+        raise _ai_error(e)
 
 
 @app.post("/api/grade")

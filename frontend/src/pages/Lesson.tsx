@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Check, ChevronDown, ListChecks, Loader2, MessagesSquare, PenLine, Play, QrCode, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, Loader2, Play, QrCode, RefreshCw, Trash2 } from "lucide-react";
 import ReadinessCard from "../components/ReadinessCard";
 import RichText from "../components/RichText";
 import { SourceQuote } from "../components/QuestionCard";
@@ -11,14 +11,8 @@ import { readiness } from "../lib/readiness";
 import { loadHistory, type History } from "../lib/storage";
 import { useAI } from "../lib/useAI";
 import { tokens } from "../lib/api";
-import { lessonPack, type Bank, type Course, type Format, type Lesson } from "../lib/types";
-import { CourseMissing, FORMAT_NAME, useCourse } from "./Course";
-
-const FORMATS: { id: Format; icon: typeof ListChecks; text: string; counts: number[] }[] = [
-  { id: "quiz", icon: ListChecks, text: "Four options, graded instantly. Wrong options are real student mistakes. Usable in class.", counts: [8, 12, 16, 20] },
-  { id: "written", icon: PenLine, text: "Open questions. Your answer is graded against this lesson, with the key points you missed.", counts: [4, 6, 8, 10] },
-  { id: "oral", icon: MessagesSquare, text: "An examiner asks you questions in a chat. Answer by typing or speaking.", counts: [5, 7, 10] },
-];
+import { FORMAT_INFO, FORMAT_ORDER, lessonPack, type Bank, type Course, type Exercise, type Format, type Lesson } from "../lib/types";
+import { CourseMissing, useCourse } from "./Course";
 
 /** Generates a bank for one lesson in one format and saves it in the course. */
 export async function createBank(course: Course, lesson: Lesson, format: Format, count: number): Promise<Course> {
@@ -46,7 +40,7 @@ export default function LessonPage() {
   const { course, lesson, save } = useLesson();
   const ai = useAI();
   const [history, setHistory] = useState<History | null>(null);
-  const [counts, setCounts] = useState<Record<Format, number>>({ quiz: 12, written: 6, oral: 7 });
+  const [counts, setCounts] = useState(() => Object.fromEntries(FORMAT_ORDER.map((f) => [f, FORMAT_INFO[f].counts[1]])) as Record<Format, number>);
   const [busy, setBusy] = useState<Format | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [code, setCode] = useState(accessCode.get());
@@ -72,39 +66,46 @@ export default function LessonPage() {
       {lesson.truncated && <p className="mt-3 rounded-lg bg-paper px-4 py-3 ring-1 ring-line">These files were long, so only the first part is used. Split very long material into several lessons.</p>}
 
       <h2 className="mt-8 text-xl font-bold">Practice this lesson</h2>
-      <div className="mt-4 grid gap-4 md:grid-cols-3">
-        {FORMATS.map((f) => {
-          const bank = lesson.banks[f.id];
-          return (
-            <div key={f.id} className={`flex flex-col rounded-xl border-2 bg-white p-5 ${bank ? "border-navy" : "border-line"}`}>
-              <f.icon size={22} className="text-violet-ink" aria-hidden />
-              <h3 className="mt-2 font-display text-lg font-bold">{FORMAT_NAME[f.id]}</h3>
-              <p className="mt-1 flex-1 text-[15px] text-navy-soft">{f.text}</p>
-              {bank ? (
-                <div className="mt-4 grid gap-2">
-                  <p className="text-sm text-navy-mute">{bank.exercises.length} questions{bank.generator.test_mode && " (test mode)"}</p>
-                  <Link to={`${base}/practice/${f.id}`} className="btn-primary"><Play size={17} aria-hidden /> Practice</Link>
-                  <button className="inline-flex items-center justify-center gap-1.5 text-sm font-bold text-navy-mute hover:text-navy disabled:opacity-50" disabled={!aiReady || !!busy}
-                    onClick={() => { if (confirm("Replace these questions with a new set?")) generate(f.id); }}>
-                    {busy === f.id ? <Loader2 size={15} className="animate-spin" aria-hidden /> : <RefreshCw size={15} aria-hidden />} New questions
-                  </button>
+      <p className="mt-1 text-navy-soft">Pick the formats your exam uses. Questions are created the first time you open a format.</p>
+      {[{ title: "Graded instantly and exactly", list: FORMAT_ORDER.filter((f) => FORMAT_INFO[f].exact) },
+        { title: "Graded against your lesson by AI", list: FORMAT_ORDER.filter((f) => !FORMAT_INFO[f].exact) }].map((group) => (
+        <div key={group.title} className="mt-6">
+          <h3 className="text-sm font-bold uppercase tracking-wide text-navy-mute">{group.title}</h3>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {group.list.map((f) => {
+              const bank = lesson.banks[f];
+              const info = FORMAT_INFO[f];
+              return (
+                <div key={f} className={`flex flex-col rounded-xl border-2 bg-white p-4 ${bank ? "border-navy" : "border-line"}`}>
+                  <h4 className="font-display text-lg font-bold">{info.name}</h4>
+                  <p className="mt-1 flex-1 text-[15px] text-navy-soft">{info.text}</p>
+                  {bank ? (
+                    <div className="mt-3 grid gap-2">
+                      <p className="text-sm text-navy-mute">{bank.exercises.length} questions{bank.generator.test_mode && " (test mode)"}</p>
+                      <Link to={`${base}/practice/${f}`} className="btn-primary"><Play size={17} aria-hidden /> Practice</Link>
+                      <button className="inline-flex items-center justify-center gap-1.5 text-sm font-bold text-navy-mute hover:text-navy disabled:opacity-50" disabled={!aiReady || !!busy}
+                        onClick={() => { if (confirm("Replace these questions with a new set?")) generate(f); }}>
+                        {busy === f ? <Loader2 size={15} className="animate-spin" aria-hidden /> : <RefreshCw size={15} aria-hidden />} New questions
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="mt-3 grid gap-2">
+                      <label className="inline-flex items-center gap-2 text-[15px]"><span className="text-navy-mute">Questions</span>
+                        <select value={counts[f]} onChange={(e) => setCounts({ ...counts, [f]: Number(e.target.value) })} className="rounded-md border border-line bg-white px-2 py-1 font-bold">
+                          {info.counts.map((n) => <option key={n} value={n}>{n}</option>)}
+                        </select>
+                      </label>
+                      <button className="btn-violet" disabled={!aiReady || !!busy} onClick={() => generate(f)}>
+                        {busy === f ? <><Loader2 size={17} className="animate-spin" aria-hidden /> Writing and checking</> : "Create questions"}
+                      </button>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="mt-4 grid gap-2">
-                  <label className="inline-flex items-center gap-2 text-[15px]"><span className="text-navy-mute">Questions</span>
-                    <select value={counts[f.id]} onChange={(e) => setCounts({ ...counts, [f.id]: Number(e.target.value) })} className="rounded-md border border-line bg-white px-2 py-1 font-bold">
-                      {f.counts.map((n) => <option key={n} value={n}>{n}</option>)}
-                    </select>
-                  </label>
-                  <button className="btn-violet" disabled={!aiReady || !!busy} onClick={() => generate(f.id)}>
-                    {busy === f.id ? <><Loader2 size={17} className="animate-spin" aria-hidden /> Writing and checking</> : "Create questions"}
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
       {busy && <p className="mt-3 text-sm text-navy-mute" role="status">The AI writes the questions, then every quote is matched against this lesson and a second AI review checks the answers. This usually takes under a minute.</p>}
       {err && <p className="mt-3 rounded-lg bg-coral-wash px-4 py-3 text-coral-ink" role="alert">{err}</p>}
 
@@ -128,7 +129,7 @@ export default function LessonPage() {
 
       <div className="mt-10"><ReadinessCard r={readiness(lessonPack(course, lesson), history, lesson.id)} /></div>
 
-      {lesson.banks.quiz && <ClassQuiz course={course} lesson={lesson} bank={lesson.banks.quiz} save={save} />}
+      {(lesson.banks.quiz || lesson.banks.tf) && <ClassQuiz course={course} lesson={lesson} save={save} />}
 
       <button className="btn-ghost mt-12" onClick={async () => {
         if (!confirm(`Delete the lesson "${lesson.title}"?`)) return;
@@ -139,21 +140,25 @@ export default function LessonPage() {
   );
 }
 
-function ClassQuiz({ course, lesson, bank, save }: { course: Course; lesson: Lesson; bank: Bank; save: (c: Course) => Promise<void> }) {
+function ClassQuiz({ course, lesson, save }: { course: Course; lesson: Lesson; save: (c: Course) => Promise<void> }) {
+  const banks = (["quiz", "tf"] as const).filter((f) => lesson.banks[f]).map((f) => lesson.banks[f]!);
+  const exercises: Exercise[] = banks.flatMap((b) => b.exercises);
   const navigate = useNavigate();
   const [open, setOpen] = useState<string | null>(null);
   const [secs, setSecs] = useState(60);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const approved = new Set(bank.approved ?? []);
+  const approved = new Set(banks.flatMap((b) => b.approved ?? []));
   const setApproved = (ids: string[]) => save({
-    ...course, lessons: course.lessons.map((l) => (l.id === lesson.id ? { ...l, banks: { ...l.banks, quiz: { ...bank, approved: ids } } } : l)),
+    ...course, lessons: course.lessons.map((l) => (l.id === lesson.id ? { ...l, banks: Object.fromEntries(
+      Object.entries(l.banks).map(([f, b]) => [f, b && (f === "quiz" || f === "tf") ? { ...b, approved: b.exercises.filter((e) => ids.includes(e.id)).map((e) => e.id) } : b]),
+    ) } : l)),
   });
   async function launch() {
     setBusy(true); setErr(null);
-    const questions = bank.exercises.filter((e) => approved.has(e.id)).slice(0, 20).map((e) => ({
-      id: e.id, prompt: e.prompt, options: (e.options ?? []).map((o) => ({ text: o, latex: "" })),
-      correct: (e.answer as { correct: number }).correct, labels: e.labels ?? [], solution: e.solution,
+    const questions = exercises.filter((e) => approved.has(e.id)).slice(0, 20).map((e) => ({
+      id: e.id, prompt: e.answer.kind === "tf" ? `True or false? ${e.prompt}` : e.prompt, options: (e.options ?? []).map((o) => ({ text: o, latex: "" })),
+      correct: e.answer.kind === "tf" ? (e.answer.value ? 0 : 1) : (e.answer as { correct: number }).correct, labels: e.labels ?? [], solution: e.solution,
     }));
     try {
       const r = await api.createQuiz({ title: `${course.name}: ${lesson.title}`, questions, seconds_per_question: secs });
@@ -163,10 +168,10 @@ function ClassQuiz({ course, lesson, bank, save }: { course: Course; lesson: Les
   }
   return (
     <section className="mt-10">
-      <h2 className="text-xl font-bold">Multiple-choice questions, and using them in class</h2>
-      <p className="mt-1 max-w-[46rem] text-navy-soft">Professors: open a question, check it and its answer, and approve it. Approved questions can go into a live class quiz.</p>
+      <h2 className="text-xl font-bold">Using questions in class</h2>
+      <p className="mt-1 max-w-[46rem] text-navy-soft">Multiple-choice and true/false questions work on phones in a live class quiz. Professors: open a question, check it and its answer, and approve it.</p>
       <ul className="mt-4 grid gap-2.5">
-        {bank.exercises.map((e, i) => (
+        {exercises.map((e, i) => (
           <li key={e.id} className={`rounded-xl border-2 bg-white ${approved.has(e.id) ? "border-teal" : "border-line"}`}>
             <button className="flex w-full items-start justify-between gap-3 p-4 text-left" aria-expanded={open === e.id} onClick={() => setOpen(open === e.id ? null : e.id)}>
               <span className="min-w-0"><span className="text-navy-mute">Q{i + 1}. </span><RichText text={e.prompt} />{approved.has(e.id) && <span className="ml-2 text-sm font-bold text-teal-ink">approved</span>}</span>
@@ -176,7 +181,7 @@ function ClassQuiz({ course, lesson, bank, save }: { course: Course; lesson: Les
               <div className="grid gap-3 border-t border-line p-4">
                 <ul className="grid gap-2">
                   {(e.options ?? []).map((o, k) => {
-                    const right = k === (e.answer as { correct: number }).correct;
+                    const right = e.answer.kind === "tf" ? (k === 0) === e.answer.value : k === (e.answer as { correct: number }).correct;
                     return (
                       <li key={k} className="flex gap-3 text-[15px]">
                         <span className={`font-display font-bold ${right ? "text-teal-ink" : "text-navy-mute"}`}>{LETTERS[k]}</span>

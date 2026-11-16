@@ -6,9 +6,9 @@ import { ErrorState, Loading } from "../components/States";
 import { api } from "../lib/api";
 import { courseReadiness, readiness } from "../lib/readiness";
 import { deleteCourse, getCourse, loadHistory, newId, saveCourse, type History } from "../lib/storage";
-import { lessonPack, type Course, type Format } from "../lib/types";
+import { FORMAT_INFO, FORMAT_ORDER, lessonPack, type Course, type Format } from "../lib/types";
 
-export const FORMAT_NAME: Record<Format, string> = { quiz: "Multiple choice", written: "Written", oral: "Oral" };
+export const FORMAT_NAME = Object.fromEntries(FORMAT_ORDER.map((f) => [f, FORMAT_INFO[f].name])) as Record<Format, string>;
 
 /** Loads a course from this device and keeps it in sync after saves. */
 export function useCourse(id: string) {
@@ -65,7 +65,7 @@ export default function CoursePage() {
         <ul className="mt-4 grid gap-3">
           {course.lessons.map((l) => {
             const r = readiness(lessonPack(course, l), history, l.id);
-            const formats = (Object.keys(l.banks) as Format[]).filter((f) => l.banks[f]);
+            const formats = FORMAT_ORDER.filter((f) => l.banks[f]);
             return (
               <li key={l.id}>
                 <Link to={`/course/${course.id}/lesson/${l.id}`} className="flex items-center gap-4 rounded-xl border-2 border-line bg-white p-4 hover:border-navy">

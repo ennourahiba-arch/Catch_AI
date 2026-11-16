@@ -8,7 +8,19 @@ import { Loading } from "../components/States";
 import { accessCode, api } from "../lib/api";
 import { addExerciseAttempt, getKV, newId, setKV } from "../lib/storage";
 import { useAI } from "../lib/useAI";
-import type { Course, Exercise, Passage } from "../lib/types";
+import { gradeBlank, gradeMatch, gradeMulti, halves, shuffled } from "../lib/grading";
+import { FORMAT_INFO, FORMAT_ORDER, type Course, type Exercise, type Format, type Passage } from "../lib/types";
+
+type WrittenFormat = Exclude<Format, "oral">;
+const EXAM_FORMATS = FORMAT_ORDER.filter((f) => f !== "oral") as WrittenFormat[];
+const MAX_TOTAL = 40;
+
+/** Points a question is worth in the mock exam. */
+export function maxPoints(q: Exercise): number {
+  const k = q.answer.kind;
+  if (k === "open") return q.format === "short" ? 2 : Math.max(2, q.answer.key_points.length);
+  return k === "multi" || k === "match" ? 2 : 1;
+}
 import { CourseMissing, useCourse } from "./Course";
 
 const MATERIAL_BUDGET = 85_000; // characters sent to the AI, shared fairly between the chosen lessons
@@ -67,30 +79,43 @@ export default function MockPage() {
   );
 }
 
+function defaultParts(course: Course, minutes: number): Record<WrittenFormat, number> {
+  const parts = Object.fromEntries(EXAM_FORMATS.map((f) => [f, 0])) as Record<WrittenFormat, number>;
+  const fromPast = course.exam_profile?.parts ?? {};
+  const known = EXAM_FORMATS.filter((f) => (fromPast[f] ?? 0) > 0);
+  if (known.length) {
+    const total = known.reduce((n, f) => n + (fromPast[f] ?? 0), 0);
+    const scale = Math.min(1, MAX_TOTAL / total);
+    for (const f of known) parts[f] = Math.max(1, Math.min(25, Math.round((fromPast[f] ?? 0) * scale)));
+  } else {
+    parts.quiz = Math.min(15, Math.max(5, Math.round(minutes / 5)));
+    parts.short = Math.min(4, Math.max(2, Math.round(minutes / 20)));
+  }
+  return parts;
+}
+
 function Setup({ course, onReady }: { course: Course; onReady: (e: ExamState) => void }) {
   const ai = useAI();
   const prof = course.exam_profile;
   const [lessons, setLessons] = useState<string[]>(course.lessons.map((l) => l.id));
   const [minutes, setMinutes] = useState(Math.min(180, Math.max(15, prof?.duration_minutes ?? 45)));
-  const types = (prof?.question_types ?? []).join(" ").toLowerCase();
-  const wantsWritten = !prof || /writ|short|open|essay|problem|explain|r[ée]dig|d[ée]velopp/.test(types);
-  const wantsMcq = !prof || /choice|mcq|qcm|quiz|multiple/.test(types) || !wantsWritten;
-  const [mcq, setMcq] = useState(wantsMcq ? Math.min(20, Math.max(5, Math.round(minutes / 4))) : 0);
-  const [written, setWritten] = useState(wantsWritten ? Math.min(5, Math.max(2, Math.round(minutes / 20))) : 0);
+  const [parts, setParts] = useState<Record<WrittenFormat, number>>(() => defaultParts(course, minutes));
   const [code, setCode] = useState(accessCode.get());
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const durations = [...new Set([20, 30, 45, 60, 90, 120, minutes])].sort((a, b) => a - b);
+  const durations = [...new Set([20, 30, 45, 60, 90, 120, 180, minutes])].sort((a, b) => a - b);
+  const total = EXAM_FORMATS.reduce((n, f) => n + parts[f], 0);
+  const fromPast = !!prof?.parts && Object.keys(prof.parts).length > 0;
 
   async function start() {
     setBusy(true); setErr(null);
     if (ai.status?.access_code_required) accessCode.set(code.trim());
     try {
       const { passages, lessonOf } = buildMaterial(course, lessons);
-      const res = await api.mockExam({ passages, past_exams: course.past_exams?.text ?? "", mcq, written });
+      const res = await api.mockExam({ passages, past_exams: course.past_exams?.text ?? "", parts: Object.fromEntries(EXAM_FORMATS.filter((f) => parts[f]).map((f) => [f, parts[f]])) });
       const tag = (e: Exercise) => ({ ...e, topic: lessonOf[e.source_ids?.[0] ?? ""] ?? lessons[0] });
-      const questions = [...(res.mcq?.exercises ?? []).map(tag), ...(res.written?.exercises ?? []).map(tag)];
-      if (!questions.length) throw new Error(res.errors[0] ?? "No questions could be created. Try again.");
+      const questions = EXAM_FORMATS.flatMap((f) => res.exercises.filter((e) => e.format === f).map(tag));
+      if (!questions.length) throw new Error("No questions could be created. Try again.");
       const now = Date.now();
       onReady({
         courseId: course.id, questions, minutes, started: now, deadline: now + minutes * 60_000, answers: {},
@@ -104,7 +129,8 @@ function Setup({ course, onReady }: { course: Course; onReady: (e: ExamState) =>
     <div className="mt-4 grid gap-6">
       <div>
         <h1 className="text-3xl font-bold sm:text-4xl">Mock exam</h1>
-        <p className="mt-1 text-navy-soft">Timed, across your lessons, with no hints and no feedback until you hand it in.{prof ? " Set up from what your past exams look like; adjust if needed." : " Add past exams to the course to match your real exam's shape."}</p>
+        <p className="mt-1 text-navy-soft">Timed, across your lessons, with no hints and no feedback until you hand it in.
+          {fromPast ? " The mix below copies your past exams; adjust it if needed." : " Add past exams to the course and the mix will copy your real exam."}</p>
       </div>
 
       <fieldset className="rounded-xl border border-line bg-white p-5">
@@ -122,23 +148,25 @@ function Setup({ course, onReady }: { course: Course; onReady: (e: ExamState) =>
         </ul>
       </fieldset>
 
-      <div className="grid gap-4 rounded-xl border border-line bg-white p-5 sm:grid-cols-3">
-        <label className="grid gap-1.5"><span className="font-bold">Time</span>
+      <fieldset className="rounded-xl border border-line bg-white p-5">
+        <legend className="px-1 font-bold">Time and questions</legend>
+        <label className="inline-flex items-center gap-3"><span className="text-navy-soft">Time</span>
           <select value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} className="min-h-[44px] rounded-lg border border-line bg-white px-3 font-bold">
             {durations.map((d) => <option key={d} value={d}>{d} minutes</option>)}
           </select>
         </label>
-        <label className="grid gap-1.5"><span className="font-bold">Multiple choice</span>
-          <select value={mcq} onChange={(e) => setMcq(Number(e.target.value))} className="min-h-[44px] rounded-lg border border-line bg-white px-3 font-bold">
-            {[0, 5, 8, 10, 12, 15, 20, 25].map((n) => <option key={n} value={n}>{n} questions</option>)}
-          </select>
-        </label>
-        <label className="grid gap-1.5"><span className="font-bold">Written</span>
-          <select value={written} onChange={(e) => setWritten(Number(e.target.value))} className="min-h-[44px] rounded-lg border border-line bg-white px-3 font-bold">
-            {[0, 1, 2, 3, 4, 5, 6, 8].map((n) => <option key={n} value={n}>{n} questions</option>)}
-          </select>
-        </label>
-      </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {EXAM_FORMATS.map((f) => (
+            <label key={f} className="flex items-center justify-between gap-3 rounded-lg bg-paper px-3 py-2">
+              <span>{FORMAT_INFO[f].name}</span>
+              <select value={parts[f]} onChange={(e) => setParts({ ...parts, [f]: Number(e.target.value) })} className="rounded-md border border-line bg-white px-2 py-1 font-bold">
+                {[...new Set([0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, parts[f]])].sort((a, b) => a - b).map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </label>
+          ))}
+        </div>
+        <p className={`mt-3 text-[15px] ${total > MAX_TOTAL ? "font-bold text-coral-ink" : "text-navy-mute"}`}>{total} questions{total > MAX_TOTAL && `: the maximum is ${MAX_TOTAL}`}.</p>
+      </fieldset>
 
       {ai.status && !ai.status.enabled && <p className="rounded-lg bg-paper px-4 py-3 ring-1 ring-line">A mock exam is written by AI from your lessons, and no AI is set up on the server yet.</p>}
       {ai.status?.enabled && (!ai.consent || ai.status.access_code_required) && (
@@ -159,10 +187,10 @@ function Setup({ course, onReady }: { course: Course; onReady: (e: ExamState) =>
       {ai.status?.test_mode && <p className="font-bold text-coral-ink">Test mode: the server uses a simulated AI, so questions will be placeholder text.</p>}
       {err && <p className="rounded-lg bg-coral-wash px-4 py-3 text-coral-ink" role="alert">{err}</p>}
       <div>
-        <button className="btn-primary" disabled={!aiReady || busy || !lessons.length || mcq + written === 0} onClick={start}>
+        <button className="btn-primary" disabled={!aiReady || busy || !lessons.length || total === 0 || total > MAX_TOTAL} onClick={start}>
           {busy ? <><Loader2 size={17} className="animate-spin" aria-hidden /> Writing your exam</> : <><Clock size={17} aria-hidden /> Create the exam and start the clock</>}
         </button>
-        {busy && <p className="mt-2 text-sm text-navy-mute" role="status">Questions are written from your lessons, every quote is matched against them, and a second AI review checks the answers. This can take a minute. The clock starts when the exam appears.</p>}
+        {busy && <p className="mt-2 text-sm text-navy-mute" role="status">Questions are written from your lessons, every quote is matched against them, and a second AI review checks the answers (and re-solves any problems). This can take a minute. The clock starts when the exam appears.</p>}
       </div>
     </div>
   );
@@ -181,8 +209,9 @@ function Exam({ exam, update }: { exam: ExamState; update: (e: ExamState) => voi
   const submit = () => { if (!submitted.current) { submitted.current = true; update({ ...exam, submitted: Date.now() }); } };
   useEffect(() => { if (left === 0) submit(); }); // time's up: hand in automatically
   const set = (qid: string, v: string) => update({ ...exam, answers: { ...exam.answers, [qid]: v } });
-  const mcqs = exam.questions.filter((q) => q.answer.kind === "mcq");
-  const open = exam.questions.filter((q) => q.answer.kind === "open");
+  let n = 0;
+  const sections = EXAM_FORMATS.map((f) => ({ format: f, items: exam.questions.filter((q) => (q.format ?? (q.answer.kind === "mcq" ? "quiz" : "written")) === f).map((q) => ({ q, n: ++n })) }))
+    .filter((sec) => sec.items.length);
 
   return (
     <div className="mt-2">
@@ -194,39 +223,22 @@ function Exam({ exam, update }: { exam: ExamState; update: (e: ExamState) => voi
       <h1 className="text-2xl font-bold">Mock exam</h1>
       <p className="text-navy-mute">{exam.minutes} minutes. Your answers are saved on this device as you go; if you reload, the clock keeps running.</p>
 
-      {mcqs.length > 0 && <h2 className="mt-8 text-xl font-bold">Part A: multiple choice <span className="text-base font-normal text-navy-mute">(1 point each)</span></h2>}
-      <ol className="mt-3 grid gap-4">
-        {mcqs.map((q, i) => (
-          <li key={q.id} className="rounded-xl border border-line bg-white p-5">
-            <p className="font-bold"><span className="text-navy-mute">{i + 1}. </span><RichText text={q.prompt} /></p>
-            <div className="mt-3 grid gap-2" role="radiogroup" aria-label={`Question ${i + 1}`}>
-              {(q.options ?? []).map((o, k) => {
-                const on = exam.answers[q.id] === String(k);
-                return (
-                  <button key={k} role="radio" aria-checked={on} onClick={() => set(q.id, String(k))}
-                    className={`flex items-start gap-3 rounded-lg border-2 px-3 py-2 text-left ${on ? "border-navy bg-paper" : "border-line hover:border-navy-mute"}`}>
-                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-display text-sm font-bold ${on ? "bg-navy text-white" : "bg-paper"}`}>{LETTERS[k]}</span>
-                    <span className="pt-0.5"><RichText text={o} /></span>
-                  </button>
-                );
-              })}
-            </div>
-          </li>
-        ))}
-      </ol>
-
-      {open.length > 0 && <h2 className="mt-10 text-xl font-bold">Part {mcqs.length ? "B" : "A"}: written <span className="text-base font-normal text-navy-mute">(2 points each)</span></h2>}
-      <ol className="mt-3 grid gap-4">
-        {open.map((q, i) => (
-          <li key={q.id} className="rounded-xl border border-line bg-white p-5">
-            <label className="grid gap-2">
-              <span className="font-bold"><span className="text-navy-mute">{mcqs.length + i + 1}. </span><RichText text={q.prompt} /></span>
-              <textarea rows={7} value={exam.answers[q.id] ?? ""} onChange={(e) => set(q.id, e.target.value.slice(0, 5000))}
-                className="rounded-lg border border-line p-3 outline-none focus:border-violet" />
-            </label>
-          </li>
-        ))}
-      </ol>
+      {sections.map((sec, si) => (
+        <section key={sec.format} className="mt-8">
+          <h2 className="text-xl font-bold">Part {"ABCDEFG"[si]}: {FORMAT_INFO[sec.format].name.toLowerCase()}</h2>
+          <ol className="mt-3 grid gap-4">
+            {sec.items.map(({ q, n }) => (
+              <li key={q.id} className="rounded-xl border border-line bg-white p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <span className="font-bold"><span className="text-navy-mute">{n}. </span>{q.answer.kind !== "blank" && <RichText text={q.prompt} />}</span>
+                  <span className="shrink-0 text-sm text-navy-mute">{maxPoints(q)} {maxPoints(q) === 1 ? "point" : "points"}</span>
+                </div>
+                <div className="mt-3"><ExamInput q={q} value={exam.answers[q.id] ?? ""} onChange={(v) => set(q.id, v)} /></div>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ))}
       <button className="btn-primary mt-8" onClick={() => { if (confirm("Hand in your exam?")) submit(); }}>Hand in</button>
     </div>
   );
@@ -244,18 +256,34 @@ function Report({ course, exam, update, save }: { course: Course; exam: ExamStat
     (async () => {
       const g: Record<string, Grade> = {};
       for (const q of exam.questions) {
-        const ans = (exam.answers[q.id] ?? "").trim();
-        if (q.answer.kind === "mcq") {
-          g[q.id] = { points: ans !== "" && Number(ans) === q.answer.correct ? 1 : 0, max: 1, verdict: ans !== "" && Number(ans) === q.answer.correct ? "correct" : "incorrect" };
-        } else if (q.answer.kind === "open") {
-          if (!ans) { g[q.id] = { points: 0, max: 2, verdict: "incorrect", feedback: "No answer was given." }; }
+        const raw = exam.answers[q.id] ?? "";
+        const max = maxPoints(q);
+        const a = q.answer;
+        if (a.kind === "mcq" || a.kind === "tf") {
+          const ok = raw !== "" && (a.kind === "mcq" ? Number(raw) === a.correct : (raw === "true") === a.value);
+          g[q.id] = { points: ok ? max : 0, max, verdict: ok ? "correct" : "incorrect" };
+        } else if (a.kind === "multi") {
+          const r = gradeMulti(raw ? (JSON.parse(raw) as number[]) : [], a.correct);
+          g[q.id] = { points: halves(r.fraction * max), max, verdict: r.exact ? "correct" : r.fraction > 0 ? "partial" : "incorrect" };
+        } else if (a.kind === "blank") {
+          const ok = gradeBlank(raw, a.accepted);
+          g[q.id] = { points: ok ? max : 0, max, verdict: ok ? "correct" : "incorrect" };
+        } else if (a.kind === "match") {
+          const r = gradeMatch(raw ? (JSON.parse(raw) as (string | null)[]) : a.pairs.map(() => null), a.pairs);
+          g[q.id] = { points: halves(r.fraction * max), max, verdict: r.exact ? "correct" : r.right ? "partial" : "incorrect" };
+        } else if (a.kind === "open") {
+          const ans = raw.trim();
+          if (!ans) g[q.id] = { points: 0, max, verdict: "incorrect", feedback: "No answer was given." };
           else {
             try {
-              const r = await api.grade({ question: q.prompt, key_points: q.answer.key_points, model_answer: q.answer.model_answer,
+              const r = await api.grade({ question: q.prompt, key_points: a.key_points, model_answer: a.model_answer, final_answer: a.final_answer ?? "",
                 sources: q.solution.map((s) => s.quote ?? "").filter(Boolean), answer: ans });
-              g[q.id] = { points: r.verdict === "correct" ? 2 : r.verdict === "partial" ? 1 : 0, max: 2, verdict: r.verdict, feedback: r.feedback, covered: r.covered };
+              const points = q.format === "short"
+                ? (r.verdict === "correct" ? 2 : r.verdict === "partial" ? 1 : 0)
+                : Math.min(max, r.covered.length || (r.verdict === "correct" ? max : 0));
+              g[q.id] = { points, max, verdict: r.verdict, feedback: r.feedback, covered: r.covered };
             } catch {
-              g[q.id] = { points: 0, max: 2, verdict: "ungraded", feedback: "This answer couldn't be graded (no connection to the AI). Compare it with the model answer below." };
+              g[q.id] = { points: 0, max, verdict: "ungraded", feedback: "This answer couldn't be graded (no connection to the AI). Compare it with the model answer below." };
             }
           }
           setProgress((p) => p + 1);
@@ -265,9 +293,8 @@ function Report({ course, exam, update, save }: { course: Course; exam: ExamStat
       for (const q of exam.questions) {
         const gr = g[q.id];
         if (gr.verdict === "ungraded") continue;
-        const pick = q.answer.kind === "mcq" ? Number(exam.answers[q.id]) : NaN;
         await addExerciseAttempt({ exerciseId: q.id, topic: q.topic, ts: Date.now(), attempts: 1, correct: gr.verdict !== "incorrect",
-          firstTry: gr.verdict === "correct", usedHint: false, mistake: q.answer.kind === "mcq" && gr.verdict === "incorrect" && !Number.isNaN(pick) ? q.labels?.[pick] ?? null : null });
+          firstTry: gr.verdict === "correct", usedHint: false, mistake: gr.verdict === "incorrect" ? mistakeFor(q, exam.answers[q.id] ?? "") : null });
       }
       const byLesson: Record<string, { score: number; max: number }> = {};
       for (const q of exam.questions) {
@@ -284,7 +311,7 @@ function Report({ course, exam, update, save }: { course: Course; exam: ExamStat
     })();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const written = exam.questions.filter((q) => q.answer.kind === "open").length;
+  const writtenCount = exam.questions.filter((q) => q.answer.kind === "open").length;
   const summary = useMemo(() => {
     if (!grades) return null;
     const by: Record<string, { score: number; max: number }> = {};
@@ -299,7 +326,7 @@ function Report({ course, exam, update, save }: { course: Course; exam: ExamStat
       <div className="py-16 text-center" role="status">
         <Loader2 className="mx-auto animate-spin text-violet" size={28} aria-hidden />
         <p className="mt-4 text-xl font-bold">Marking your exam</p>
-        {written > 0 && <p className="mt-1 text-navy-mute">Written answers graded: {progress} of {written}</p>}
+        {writtenCount > 0 && <p className="mt-1 text-navy-mute">Written answers graded: {progress} of {writtenCount}</p>}
       </div>
     );
   }
@@ -310,7 +337,7 @@ function Report({ course, exam, update, save }: { course: Course; exam: ExamStat
       <div className="rounded-xl bg-navy px-6 py-5 text-white">
         <p className="text-white/70">Mock exam result</p>
         <p className="font-display text-5xl font-extrabold">{Math.round((100 * summary.score) / summary.max)}%</p>
-        <p className="mt-1 text-white/80">{summary.score} of {summary.max} points, in {used < 1 ? "under a minute" : `${used} of ${exam.minutes} minutes`}.{written > 0 && " Written answers were graded by AI against your lessons; it can make mistakes."}</p>
+        <p className="mt-1 text-white/80">{summary.score} of {summary.max} points, in {used < 1 ? "under a minute" : `${used} of ${exam.minutes} minutes`}.{writtenCount > 0 && " Written answers were graded by AI against your lessons; it can make mistakes."}</p>
       </div>
       {ungraded && <p className="rounded-lg bg-paper px-4 py-3 ring-1 ring-line">Some written answers couldn't be graded and count as 0 for now. Check them against the model answers below.</p>}
       <section className="rounded-xl border border-line bg-white p-5">
@@ -329,23 +356,11 @@ function Report({ course, exam, update, save }: { course: Course; exam: ExamStat
           return (
             <li key={q.id} className="rounded-xl border border-line bg-white p-5">
               <div className="flex items-start justify-between gap-3">
-                <p className="font-bold"><span className="text-navy-mute">{i + 1}. </span><RichText text={q.prompt} /></p>
+                <p className="font-bold"><span className="text-navy-mute">{i + 1}. </span><RichText text={q.prompt} /> <span className="text-sm font-normal text-navy-mute">({FORMAT_INFO[q.format ?? "quiz"].name})</span></p>
                 <span className={`shrink-0 font-display font-bold ${g.verdict === "correct" ? "text-teal-ink" : g.verdict === "partial" ? "" : "text-coral-ink"}`}>{g.points}/{g.max}</span>
               </div>
               <p className="mt-1 text-sm text-navy-mute">{exam.lessonTitles[q.topic]}</p>
-              {q.answer.kind === "mcq" ? (
-                <div className="mt-3 grid gap-1.5 text-[15px]">
-                  <p className="flex gap-2">{g.verdict === "correct" ? <Check size={18} className="text-teal-ink" aria-hidden /> : <X size={18} className="text-coral-ink" aria-hidden />}
-                    <span>Your answer: {ans === "" ? "none" : <><b>{LETTERS[Number(ans)]}</b> <RichText text={q.options?.[Number(ans)] ?? ""} /></>}</span></p>
-                  {g.verdict !== "correct" && <p>Correct: <b>{q.answer_text}</b>{ans !== "" && q.labels?.[Number(ans)] && <span className="text-coral-ink"> (your pick suggests: {q.labels[Number(ans)]!.toLowerCase()})</span>}</p>}
-                </div>
-              ) : (
-                <div className="mt-3 grid gap-2 text-[15px]">
-                  <p className="whitespace-pre-line rounded-md bg-paper p-3">{ans || <span className="text-navy-mute">No answer.</span>}</p>
-                  {g.feedback && <p><b>Feedback:</b> {g.feedback}</p>}
-                  <p><b>Model answer:</b> <RichText text={q.answer.kind === "open" ? q.answer.model_answer : ""} /></p>
-                </div>
-              )}
+              <ReviewAnswer q={q} raw={ans} grade={g} />
               {q.solution[0]?.quote && <SourceQuote quote={q.solution[0].quote} source={q.solution[0].source} />}
             </li>
           );
@@ -355,6 +370,131 @@ function Report({ course, exam, update, save }: { course: Course; exam: ExamStat
         <button className="btn-primary" onClick={() => update(null)}>Set up another mock exam</button>
         <Link to={`/course/${course.id}`} className="btn-ghost">Back to {course.name}</Link>
       </div>
+    </div>
+  );
+}
+
+function mistakeFor(q: Exercise, raw: string): string | null {
+  if (!raw) return null;
+  if (q.answer.kind === "mcq") return q.labels?.[Number(raw)] ?? null;
+  if (q.answer.kind === "tf") return q.labels?.[raw === "true" ? 0 : 1] ?? null;
+  if (q.answer.kind === "multi") {
+    const correct = q.answer.correct;
+    const wrong = (JSON.parse(raw) as number[]).find((i) => !correct.includes(i));
+    return wrong !== undefined ? q.labels?.[wrong] ?? null : null;
+  }
+  return null;
+}
+
+/** The answer field for each format, with no feedback (it's an exam). */
+function ExamInput({ q, value, onChange }: { q: Exercise; value: string; onChange: (v: string) => void }) {
+  const a = q.answer;
+  if (a.kind === "mcq" || a.kind === "tf") {
+    const opts = a.kind === "tf" ? ["True", "False"] : q.options ?? [];
+    const val = (k: number) => (a.kind === "tf" ? String(k === 0) : String(k));
+    return (
+      <div className={`grid gap-2 ${a.kind === "tf" ? "grid-cols-2" : ""}`} role="radiogroup" aria-label="Answer">
+        {opts.map((o, k) => {
+          const on = value === val(k);
+          return (
+            <button key={k} role="radio" aria-checked={on} onClick={() => onChange(val(k))}
+              className={`flex items-start gap-3 rounded-lg border-2 px-3 py-2 text-left ${on ? "border-navy bg-paper" : "border-line hover:border-navy-mute"}`}>
+              {a.kind === "mcq" && <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-display text-sm font-bold ${on ? "bg-navy text-white" : "bg-paper"}`}>{LETTERS[k]}</span>}
+              <span className={`pt-0.5 ${a.kind === "tf" ? "w-full text-center font-bold" : ""}`}><RichText text={o} /></span>
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+  if (a.kind === "multi") {
+    const sel: number[] = value ? JSON.parse(value) : [];
+    return (
+      <div className="grid gap-2">
+        <p className="text-sm text-navy-mute">Select every correct answer.</p>
+        {(q.options ?? []).map((o, k) => {
+          const on = sel.includes(k);
+          return (
+            <button key={k} role="checkbox" aria-checked={on} onClick={() => onChange(JSON.stringify(on ? sel.filter((x) => x !== k) : [...sel, k]))}
+              className={`flex items-start gap-3 rounded-lg border-2 px-3 py-2 text-left ${on ? "border-navy bg-paper" : "border-line hover:border-navy-mute"}`}>
+              <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 ${on ? "border-navy bg-navy" : "border-line"}`} aria-hidden>{on && <Check size={12} className="text-white" strokeWidth={3} />}</span>
+              <RichText text={o} />
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+  if (a.kind === "blank") {
+    const [before, after] = q.prompt.split("____");
+    return (
+      <p className="leading-loose">
+        <RichText text={before ?? ""} />
+        <input value={value} onChange={(e) => onChange(e.target.value.slice(0, 200))} aria-label="Missing word or phrase" autoComplete="off"
+          className="mx-1 inline-block w-48 border-b-2 border-navy bg-transparent px-1 font-bold outline-none focus:border-violet" />
+        <RichText text={after ?? ""} />
+      </p>
+    );
+  }
+  if (a.kind === "match") {
+    const chosen: (string | null)[] = value ? JSON.parse(value) : a.pairs.map(() => null);
+    const rights = shuffled(a.pairs.map((p) => p.right), q.id);
+    return (
+      <ul className="grid gap-2">
+        {a.pairs.map((p, i) => (
+          <li key={i} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] sm:items-center">
+            <span className="font-bold"><RichText text={p.left} /></span>
+            <select value={chosen[i] ?? ""} aria-label={`Match for ${p.left}`} className="min-h-[44px] rounded-lg border border-line bg-white px-2"
+              onChange={(e) => onChange(JSON.stringify(chosen.map((c, k) => (k === i ? e.target.value || null : c))))}>
+              <option value="">Choose…</option>
+              {rights.map((r) => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+  return (
+    <textarea rows={q.format === "short" ? 3 : 8} value={value} onChange={(e) => onChange(e.target.value.slice(0, 6000))} aria-label="Your answer"
+      className="w-full rounded-lg border border-line p-3 outline-none focus:border-violet" />
+  );
+}
+
+/** After grading: what you answered and what was expected. */
+function ReviewAnswer({ q, raw, grade }: { q: Exercise; raw: string; grade: Grade }) {
+  const a = q.answer;
+  const ok = grade.verdict === "correct";
+  const mark = ok ? <Check size={18} className="shrink-0 text-teal-ink" aria-hidden /> : <X size={18} className="shrink-0 text-coral-ink" aria-hidden />;
+  if (a.kind === "open") {
+    return (
+      <div className="mt-3 grid gap-2 text-[15px]">
+        <p className="whitespace-pre-line rounded-md bg-paper p-3">{raw || <span className="text-navy-mute">No answer.</span>}</p>
+        {grade.feedback && <p><b>Feedback:</b> {grade.feedback}</p>}
+        {q.format !== "short" && a.key_points.length > 1 && grade.covered && (
+          <ul className="grid gap-1">
+            {a.key_points.map((k, i) => (
+              <li key={i} className="flex gap-2">{grade.covered!.includes(i) ? <Check size={16} className="mt-0.5 text-teal-ink" aria-label="mark earned" /> : <X size={16} className="mt-0.5 text-coral-ink" aria-label="mark missed" />}<RichText text={k} /></li>
+            ))}
+          </ul>
+        )}
+        <p><b>Model answer:</b> <RichText text={a.model_answer} /></p>
+        {a.problem && <p className="text-sm text-navy-mute">Final answer: {a.final_answer}. Computed by AI and solved a second time to check it.</p>}
+      </div>
+    );
+  }
+  let yours = "none";
+  if (raw) {
+    if (a.kind === "mcq") yours = `${LETTERS[Number(raw)]}) ${q.options?.[Number(raw)] ?? ""}`;
+    else if (a.kind === "tf") yours = raw === "true" ? "True" : "False";
+    else if (a.kind === "multi") yours = (JSON.parse(raw) as number[]).sort().map((i) => LETTERS[i]).join(", ") || "none";
+    else if (a.kind === "blank") yours = raw;
+    else if (a.kind === "match") yours = (JSON.parse(raw) as (string | null)[]).map((c, i) => `${a.pairs[i].left} → ${c ?? "?"}`).join("; ");
+  }
+  return (
+    <div className="mt-3 grid gap-1.5 text-[15px]">
+      {q.answer.kind === "blank" && <p className="text-navy-soft"><RichText text={q.prompt} /></p>}
+      <p className="flex gap-2">{mark}<span>Your answer: <b>{yours}</b></span></p>
+      {!ok && <p>Correct: <b>{q.answer_text}</b></p>}
     </div>
   );
 }

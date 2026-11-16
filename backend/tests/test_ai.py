@@ -125,8 +125,8 @@ def test_quiz_bank_is_grounded(client):
 def test_fabricated_quote_drops_the_question(client):
     def liar(system, user):
         out = json.loads(fake_ai.respond(system, user))
-        if "TASK: generate_quiz" in user:
-            out["questions"][1]["quote"] = "this sentence appears nowhere in the course material"
+        if "TASK: generate_questions" in user:
+            out["sections"]["quiz"][1]["quote"] = "this sentence appears nowhere in the course material"
         return json.dumps(out)
     llm.FAKE_RESPONDER = liar
     pack = gen(client, count=5)
@@ -137,8 +137,8 @@ def test_fabricated_quote_drops_the_question(client):
 def test_independent_review_can_reject(client):
     def flagged(system, user):
         out = json.loads(fake_ai.respond(system, user))
-        if "TASK: generate_quiz" in user:
-            out["questions"][2]["question"] = "REJECT_ME ambiguous question"
+        if "TASK: generate_questions" in user:
+            out["sections"]["quiz"][2]["question"] = "REJECT_ME ambiguous question"
         return json.dumps(out)
     llm.FAKE_RESPONDER = flagged
     pack = gen(client, count=5)
@@ -149,8 +149,8 @@ def test_independent_review_can_reject(client):
 def test_duplicate_options_dropped(client):
     def dup(system, user):
         out = json.loads(fake_ai.respond(system, user))
-        if "TASK: generate_quiz" in user:
-            out["questions"][0]["options"][1] = out["questions"][0]["options"][0]
+        if "TASK: generate_questions" in user:
+            out["sections"]["quiz"][0]["options"][1] = out["sections"]["quiz"][0]["options"][0]
         return json.dumps(out)
     llm.FAKE_RESPONDER = dup
     assert any("duplicate" in d for d in gen(client, count=4)["dropped"])
@@ -225,15 +225,70 @@ def test_mock_exam_across_lessons(client):
         p["file"] = "Lesson 1: Scheduling"
     for p in ps[half:]:
         p["file"] = "Lesson 2: Context switches"
-    seen = {}
+    calls = []
     def spy(system, user):
-        if "TASK: generate_" in user:
-            seen["spread"] = "Spread the questions evenly" in user and "Lesson 2" in user
+        calls.append(user)
         return fake_ai.respond(system, user)
     llm.FAKE_RESPONDER = spy
-    r = client.post("/api/mock-exam", json={"passages": ps, "mcq": 6, "written": 2})
+    r = client.post("/api/mock-exam", json={"passages": ps, "parts": {"quiz": 4, "tf": 3, "blank": 2, "written": 1}})
     assert r.status_code == 200, r.text
     out = r.json()
-    assert len(out["mcq"]["exercises"]) == 6 and len(out["written"]["exercises"]) == 2
-    assert out["exam_profile"]["duration_minutes"] == 90 and seen["spread"]
-    assert client.post("/api/mock-exam", json={"passages": ps, "mcq": 0, "written": 0}).status_code == 422
+    kinds = [e["format"] for e in out["exercises"]]
+    assert kinds.count("quiz") == 4 and kinds.count("tf") == 3 and kinds.count("blank") == 2 and kinds.count("written") == 1
+    assert len(calls) == 2  # one generation + one review, whatever the mix
+    assert "Spread the questions evenly" in calls[0] and "Lesson 2" in calls[0]
+    assert out["exam_profile"]["parts"] == {"quiz": 10, "tf": 5, "short": 3, "written": 1}
+    assert client.post("/api/mock-exam", json={"passages": ps, "parts": {}}).status_code == 422
+    assert client.post("/api/mock-exam", json={"passages": ps, "parts": {"oral": 3}}).status_code == 422
+
+
+@pytest.mark.parametrize("fmt,kind", [("multi", "multi"), ("tf", "tf"), ("blank", "blank"), ("match", "match"), ("short", "open")])
+def test_every_format_generates(client, fmt, kind):
+    pack = gen(client, fmt, 4)
+    assert len(pack["exercises"]) == 4 and all(e["answer"]["kind"] == kind and e["format"] == fmt for e in pack["exercises"])
+    e = pack["exercises"][0]
+    if fmt == "multi":
+        assert e["answer"]["correct"] == [0, 1, 4] and e["labels"][2]
+    if fmt == "tf":
+        assert e["options"] == ["True", "False"]
+    if fmt == "blank":
+        assert e["prompt"].count("____") == 1 and "scheduler" in e["answer"]["accepted"]
+    if fmt == "match":
+        assert len(e["answer"]["pairs"]) == 3
+
+
+def test_structure_checks_drop_broken_keys(client):
+    def broken(system, user):
+        out = json.loads(fake_ai.respond(system, user))
+        if "multi=" in user:
+            out["sections"]["multi"][0]["correct"] = [0, 1, 2, 3, 4]       # everything "correct"
+            out["sections"]["multi"][1]["correct"] = [0, 9]                # option 9 doesn't exist
+        if "blank=" in user:
+            out["sections"]["blank"][0]["sentence"] = "No blank at all here."
+        return json.dumps(out)
+    llm.FAKE_RESPONDER = broken
+    m = gen(client, "multi", 3)
+    assert len(m["exercises"]) == 1 and any("every option" in d for d in m["dropped"])
+    b = gen(client, "blank", 3)
+    assert len(b["exercises"]) == 2 and any("exactly one blank" in d for d in b["dropped"])
+
+
+def test_problems_are_solved_twice(client):
+    r = client.post("/api/material/extract", files=[("files", ("p.txt", (COURSE + "\n\nPROBLEM section about FCFS waiting times.").encode(), "text/plain"))])
+    ps = [p for p in r.json()["passages"] if "PROBLEM" in p["text"]]
+    ok = client.post("/api/generate", json={"format": "written", "passages": ps, "count": 2}).json()
+    assert all(e["answer"].get("problem") and e["answer"]["final_answer"] == "2.67 ms" for e in ok["exercises"])
+    def disagree(system, user):
+        out = fake_ai.respond(system, user)
+        return out.replace("Compute the average", "WRONG_SUM Compute the average") if "TASK: generate_questions" in user else out
+    llm.FAKE_RESPONDER = disagree
+    r2 = client.post("/api/generate", json={"format": "written", "passages": ps, "count": 2})
+    assert r2.status_code == 422  # every problem was thrown out: the reviewer got a different result
+
+
+def test_answers_agree():
+    assert genpack.answers_agree("2.67 ms", "The average waiting time is 2.666 ms")
+    assert genpack.answers_agree("P1: 0, P2: 2, P3: 6; average 2.67", "average = 2.67 ms")
+    assert not genpack.answers_agree("2.67 ms", "5 ms")
+    assert not genpack.answers_agree("2.67", "")
+    assert genpack.answers_agree("Deadlock", "deadlock")

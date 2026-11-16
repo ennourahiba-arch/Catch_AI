@@ -16,8 +16,10 @@ A mathematically verified Calculus 1 question bank works with no AI at all.
 | Practice sessions: confidence check, 5 questions, hints, worked solutions, readiness, recurring mistake | Working |
 | Courses → lessons: upload each lesson's material (PDF, Word, PowerPoint, text); past exams per course | Working |
 | Per lesson, per format question banks, created on demand in the past exams' style, any subject | Working (needs an AI key) |
-| Timed mock exam across chosen lessons: multiple choice + written parts, survives reloads, report by lesson | Working (needs an AI key) |
-| Formats: multiple choice (graded exactly), written (AI-graded against your course), oral (AI examiner chat) | Working |
+| Formats graded exactly: multiple choice, multiple response (partial credit), true/false, fill in the blanks (accepted variants), matching | Working |
+| Formats graded by AI against the lesson: short answer, long answer & problems (marked point by point), oral | Working |
+| Problems: the reviewer AI solves each one again; if its final answer differs, the problem is discarded | Working |
+| Timed mock exam across chosen lessons, in any mix of the 7 written formats, defaulting to the past exams' mix; report by lesson | Working (needs an AI key) |
 | Exam profile read from past exams (question types, length, duration), used to set up the mock exam | Working |
 | Live class quiz: QR join, per-question timer, reveal with answer breakdown, class summary, scores | Working |
 | Privacy: breakdowns and scores hidden below 3 teams; no accounts; uploads not stored on the server | Working |
