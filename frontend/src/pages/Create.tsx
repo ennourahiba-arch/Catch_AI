@@ -10,10 +10,11 @@ const PROVIDER_NAME: Record<string, string> = { gemini: "Google Gemini", anthrop
 type Format = "quiz" | "written" | "oral";
 
 const FORMATS: { id: Format; title: string; text: string; icon: typeof ListChecks }[] = [
-  { id: "quiz", title: "Quiz", text: "Multiple choice. The AI answers a quiz with one confident mistake; then you answer fresh questions yourself.", icon: ListChecks },
-  { id: "written", title: "Written exam", text: "The AI writes an exam answer with one flawed paragraph. Then you write your own answer, graded against your course.", icon: PenLine },
-  { id: "oral", title: "Oral exam", text: "Chat-based. An AI examiner questions you, or you question an over-confident AI candidate and catch its mistake.", icon: MessagesSquare },
+  { id: "quiz", title: "Multiple choice", text: "Questions with four options, graded instantly. Wrong options are the mistakes students really make. Can also be used in class.", icon: ListChecks },
+  { id: "written", title: "Written exam", text: "Open questions. You write your answer and it's graded against your course, with the key points you missed.", icon: PenLine },
+  { id: "oral", title: "Oral exam", text: "An AI examiner asks you questions in a chat, follows up when you're vague, and scores each answer.", icon: MessagesSquare },
 ];
+const COUNTS: Record<Format, number[]> = { quiz: [8, 12, 16, 20], written: [4, 6, 8, 10], oral: [5, 7, 10] };
 
 function FilePicker({ label, help, files, setFiles, max }: { label: string; help: string; files: File[]; setFiles: (f: File[]) => void; max: number }) {
   const input = useRef<HTMLInputElement>(null);
@@ -64,7 +65,7 @@ export default function Create() {
   const [material, setMaterial] = useState<File[]>([]);
   const [past, setPast] = useState<File[]>([]);
   const [format, setFormat] = useState<Format>("quiz");
-  const [count, setCount] = useState(4);
+  const [count, setCount] = useState(12);
   const [consent, setConsent] = useState(false);
   const [code, setCode] = useState(accessCode.get());
   const [busy, setBusy] = useState<null | string>(null);
@@ -102,18 +103,18 @@ export default function Create() {
       <div className="mx-auto max-w-xl px-4 py-16">
         <h1 className="text-3xl font-bold">Any subject needs an AI connection</h1>
         <p className="mt-3 text-navy-soft">
-          Turning your own course material into rounds uses an AI model on the classroom server, and none is set up yet.
+          Writing practice questions from your own course uses an AI model on the server, and none is set up yet.
           Whoever runs this site can add one in Render: set <code>LLM_PROVIDER</code> to <code>gemini</code> and <code>GEMINI_API_KEY</code> to a key from Google AI Studio.
         </p>
-        <p className="mt-3 text-navy-soft">Everything else (the Calculus pack, class games, offline training) keeps working without it.</p>
+        <p className="mt-3 text-navy-soft">Everything else (Calculus practice, class quizzes, offline practice) keeps working without it.</p>
       </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-24 pt-8">
-      <h1 className="text-3xl font-bold sm:text-4xl">Train on your own course</h1>
-      <p className="mt-2 text-navy-soft">Upload your course material, choose an exam format, and Catch the AI builds rounds from it, for any subject.</p>
+      <h1 className="text-3xl font-bold sm:text-4xl">Practice on your own course</h1>
+      <p className="mt-2 text-navy-soft">Upload your course and past exams, choose your exam's format, and Rehearsal writes practice questions from your material, for any subject.</p>
       {status.test_mode && (
         <p className="mt-4 rounded-lg bg-coral-wash px-4 py-3 font-bold text-coral-ink">
           Test mode: the server uses a simulated AI, so questions will be placeholder text. Add a real API key in Render for real content.
@@ -122,13 +123,13 @@ export default function Create() {
 
       <div className="mt-8 grid gap-8">
         <FilePicker label="1. Course material" help="Lecture notes, slides, chapters. Every question will be based on these." files={material} setFiles={setMaterial} max={status.max_files} />
-        <FilePicker label="Past exams (optional)" help="The AI copies their style and difficulty, but takes every fact from your course material." files={past} setFiles={setPast} max={status.max_files} />
+        <FilePicker label="Past exams (recommended)" help="Questions follow their style, wording and difficulty, but every fact comes from your course material." files={past} setFiles={setPast} max={status.max_files} />
 
         <fieldset>
           <legend className="font-bold">2. Exam format</legend>
           <div className="mt-2 grid gap-3 sm:grid-cols-3" role="radiogroup">
             {FORMATS.map((f) => (
-              <button key={f.id} type="button" role="radio" aria-checked={format === f.id} onClick={() => setFormat(f.id)}
+              <button key={f.id} type="button" role="radio" aria-checked={format === f.id} onClick={() => { setFormat(f.id); setCount(COUNTS[f.id][1]); }}
                 className={`rounded-xl border-2 bg-white p-4 text-left transition-colors ${format === f.id ? "border-navy" : "border-line hover:border-navy-mute"}`}>
                 <f.icon size={20} className="text-violet-ink" aria-hidden />
                 <span className="mt-2 block font-display text-lg font-bold">{f.title}</span>
@@ -136,14 +137,12 @@ export default function Create() {
               </button>
             ))}
           </div>
-          {format !== "oral" && (
-            <label className="mt-4 inline-flex items-center gap-3">
-              <span className="text-navy-soft">Number of rounds</span>
-              <select value={count} onChange={(e) => setCount(Number(e.target.value))} className="min-h-[44px] rounded-lg border border-line bg-white px-3 font-bold">
-                {[3, 4, 5, 6].map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </label>
-          )}
+          <label className="mt-4 inline-flex items-center gap-3">
+            <span className="text-navy-soft">Number of questions</span>
+            <select value={count} onChange={(e) => setCount(Number(e.target.value))} className="min-h-[44px] rounded-lg border border-line bg-white px-3 font-bold">
+              {COUNTS[format].map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </label>
         </fieldset>
 
         <div className="rounded-xl border border-line bg-white p-5">
@@ -169,9 +168,9 @@ export default function Create() {
         {err && <p className="rounded-lg bg-coral-wash px-4 py-3 text-coral-ink" role="alert">{err}</p>}
         <button className="btn-primary justify-self-start" disabled={!material.length || !consent || !!busy || (status.access_code_required && !code.trim())} onClick={run}>
           {busy ? <Loader2 size={17} className="animate-spin" aria-hidden /> : null}
-          {busy ?? "Create my pack"}
+          {busy ?? "Create my practice questions"}
         </button>
-        {busy && <p className="text-sm text-navy-mute" role="status">The AI writes the rounds, then every quote is matched against your document and a second AI review checks the answers. This usually takes under a minute. Keep this page open.</p>}
+        {busy && <p className="text-sm text-navy-mute" role="status">The AI writes the questions, then every quote is matched against your document and a second AI review checks the answers. This usually takes under a minute. Keep this page open.</p>}
       </div>
     </div>
   );

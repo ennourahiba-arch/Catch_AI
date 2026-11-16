@@ -1,49 +1,44 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import QRCode from "qrcode";
-import { Check, Eye, Loader2, Lock, Play, Users } from "lucide-react";
-import AttemptSheet from "../components/AttemptSheet";
+import { ArrowRight, Check, Eye, Loader2, Lock, Play, Users } from "lucide-react";
 import TeX from "../components/Math";
 import RichText from "../components/RichText";
 import { ErrorState, Loading } from "../components/States";
-import { Bars, ConnBadge, SolutionPanel, Timer } from "../components/Live";
-import { api, cleanCode, tokens, type Results, type RoomState } from "../lib/api";
+import { Bars, ConnBadge, LETTERS, OptionBody, SolutionPanel, Timer } from "../components/Live";
+import { api, cleanCode, tokens, type QuizSummary, type RoomState } from "../lib/api";
 import { useCountdown, useRoom } from "../lib/useRoom";
 
 export default function HostRoom() {
   const code = cleanCode(useParams().code ?? "");
   const saved = tokens.get("host", code);
-  if (!saved) {
-    return (
-      <ErrorState message="This screen belongs to the professor who created the room, on the device they created it from. Students join at the Join page instead." />
-    );
-  }
+  if (!saved) return <ErrorState message="This screen belongs to the professor who created the quiz, on the device they created it from. Students join at the Join page instead." />;
   return <Host code={code} token={saved.token} />;
 }
 
 function Host({ code, token }: { code: string; token: string }) {
   const { state, error, conn, refresh, apply, serverNow } = useRoom(code, { host: token });
-  const left = useCountdown(state?.status === "running" ? state.deadline_ms : null, serverNow, refresh);
+  const left = useCountdown(state?.status === "question" ? state.deadline_ms : null, serverNow, refresh);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   if (error && !state) return <ErrorState message={error.message} onRetry={error.status === 404 ? undefined : refresh} />;
-  if (!state) return <Loading label="Opening the room" />;
-  if (state.role !== "host") return <ErrorState message="This device doesn't hold the host key for this room." />;
+  if (!state) return <Loading label="Opening the quiz" />;
+  if (state.role !== "host") return <ErrorState message="This device doesn't hold the host key for this quiz." />;
 
   async function act(fn: () => Promise<RoomState>) {
-    setBusy(true);
-    setErr(null);
+    setBusy(true); setErr(null);
     try { apply(await fn()); } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
   }
+  const last = state.q_index + 1 >= state.total;
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-24 pt-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-[15px] text-navy-mute">{state.topic_name}, room {state.code}</p>
+          <p className="text-[15px] text-navy-mute">{state.title}, room {state.code}</p>
           <h1 className="text-2xl font-bold sm:text-3xl">
-            {state.status === "lobby" ? "Teams are joining" : state.status === "running" ? "Challenge in progress" : "Results"}
+            {state.status === "lobby" ? "Teams are joining" : state.status === "finished" ? "Quiz summary" : `Question ${state.q_index + 1} of ${state.total}`}
           </h1>
         </div>
         <ConnBadge conn={conn} />
@@ -51,8 +46,58 @@ function Host({ code, token }: { code: string; token: string }) {
       {err && <p className="mt-4 rounded-lg bg-coral-wash px-4 py-3 text-coral-ink" role="alert">{err}</p>}
 
       {state.status === "lobby" && <Lobby state={state} busy={busy} onStart={() => act(() => api.start(code, token))} />}
-      {state.status === "running" && <Running state={state} left={left} busy={busy} onReveal={() => act(() => api.reveal(code, token))} />}
-      {state.status === "finished" && <Finished state={state} />}
+
+      {(state.status === "question" || state.status === "reveal") && state.question && (
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:items-start">
+          <div className="grid gap-4">
+            <div className="rounded-xl border border-line bg-white p-5">
+              <p className="text-xl font-bold"><RichText text={state.question.prompt} /></p>
+              {state.question.latex && <TeX tex={state.question.latex} block className="mt-2 text-xl" />}
+            </div>
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {state.question.options.map((o, k) => {
+                const right = state.status === "reveal" && state.result?.correct === k;
+                return (
+                  <li key={k} className={`flex items-start gap-3 rounded-xl border-2 bg-white p-4 text-lg ${right ? "border-teal bg-teal-wash" : "border-line"}`}>
+                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-display font-bold ${right ? "bg-teal-ink text-white" : "bg-paper"}`}>{LETTERS[k]}</span>
+                    <span className="min-w-0 pt-0.5"><OptionBody o={o} /></span>
+                  </li>
+                );
+              })}
+            </ul>
+            {state.status === "reveal" && state.result && <SolutionPanel steps={state.result.solution} />}
+          </div>
+
+          <div className="grid gap-5 lg:sticky lg:top-24">
+            {state.status === "question" ? (
+              <>
+                <div className="rounded-xl border border-line bg-white p-5 text-center">
+                  <Timer left={left} big />
+                  <p className="mt-2 text-lg"><b>{state.answered_count}</b> of {state.team_count} teams have answered</p>
+                </div>
+                <ul className="flex flex-wrap gap-2" aria-label="Teams">
+                  {state.teams?.map((t) => (
+                    <li key={t.name} className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 font-bold ${t.answered ? "bg-teal-wash text-teal-ink" : "bg-white text-navy-mute ring-1 ring-line"}`}>
+                      {t.answered && <Check size={15} aria-hidden />} {t.name}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-sm text-navy-mute">The answer stays hidden until you reveal it, so this screen is safe to project.</p>
+                <button className="btn-ghost" disabled={busy} onClick={() => act(() => api.next(code, token))}><Eye size={17} aria-hidden /> Close and show the answer</button>
+              </>
+            ) : (
+              <>
+                <RevealStats state={state} />
+                <button className="btn-primary" disabled={busy} onClick={() => act(() => api.next(code, token))}>
+                  {last ? "Finish and show the summary" : "Next question"} <ArrowRight size={17} aria-hidden />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {state.status === "finished" && state.summary && <Finished state={state} summary={state.summary} token={token} />}
     </div>
   );
 }
@@ -73,7 +118,6 @@ function Lobby({ state, busy, onStart }: { state: RoomState; busy: boolean; onSt
         <p className="mt-3 text-navy-mute">and enter</p>
         <p className="font-display text-5xl font-extrabold tracking-[0.18em]">{state.code}</p>
       </div>
-
       <div>
         <p className="flex items-center gap-2 text-xl">
           <Users size={22} aria-hidden /> <span className="font-display text-4xl font-extrabold">{n}</span> {n === 1 ? "team" : "teams"} joined
@@ -82,136 +126,89 @@ function Lobby({ state, busy, onStart }: { state: RoomState; busy: boolean; onSt
           {state.teams?.map((t) => <li key={t.name} className="rounded-full bg-white px-4 py-2 font-bold ring-1 ring-line">{t.name}</li>)}
           {n === 0 && <li className="text-navy-mute">Waiting for the first team. One phone per team is enough.</li>}
         </ul>
+        <p className="mt-4 text-navy-soft">{state.total} {state.total === 1 ? "question" : "questions"}, {state.per_q_s} seconds each.</p>
         {n > 0 && n < 3 && (
-          <p className="mt-4 max-w-[36rem] text-[15px] text-navy-mute">
-            With fewer than 3 teams, the answer breakdown stays hidden after the round so no team can be singled out. You can still show clearly labelled sample data.
-          </p>
+          <p className="mt-2 max-w-[36rem] text-[15px] text-navy-mute">With fewer than 3 teams, answer breakdowns stay hidden so no team can be singled out.</p>
         )}
         <button className="btn-primary mt-6" disabled={n === 0 || busy} onClick={onStart}>
-          {busy ? <Loader2 size={17} className="animate-spin" aria-hidden /> : <Play size={17} aria-hidden />}
-          Start the {Math.round(state.duration_s / 60)}-minute challenge
+          {busy ? <Loader2 size={17} className="animate-spin" aria-hidden /> : <Play size={17} aria-hidden />} Start the quiz
         </button>
       </div>
     </div>
   );
 }
 
-function Running({ state, left, busy, onReveal }: { state: RoomState; left: number | null; busy: boolean; onReveal: () => void }) {
-  return (
-    <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start">
-      <div>
-        <p className={state.round.problem_statement.latex ? "text-[15px] text-navy-mute" : "text-xl font-bold"}><RichText text={state.round.problem_statement.text} /></p>
-        {state.round.problem_statement.latex && <TeX tex={state.round.problem_statement.latex} block className="text-xl" />}
-        <div className="mt-4"><AttemptSheet round={state.round} mode="static" firstError={null} /></div>
+function RevealStats({ state }: { state: RoomState }) {
+  const r = state.result!;
+  if (r.locked) {
+    return (
+      <div className="rounded-xl border border-line bg-white p-5">
+        <p className="flex items-center gap-2 font-bold"><Lock size={17} aria-hidden /> Breakdown hidden</p>
+        <p className="mt-1 text-[15px] text-navy-soft">{r.answered} {r.answered === 1 ? "team" : "teams"} answered. Breakdowns appear when at least {r.min_teams} teams answer.</p>
       </div>
-      <div className="grid gap-5 lg:sticky lg:top-24">
-        <div className="rounded-xl border border-line bg-white p-5 text-center">
-          <Timer left={left} big />
-          <p className="mt-2 text-lg"><b>{state.submitted_count}</b> of {state.team_count} teams have answered</p>
-        </div>
-        <ul className="flex flex-wrap gap-2" aria-label="Team progress">
-          {state.teams?.map((t) => (
-            <li key={t.name} className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 font-bold ${t.done ? "bg-teal-wash text-teal-ink" : t.submitted ? "bg-violet-wash text-violet-ink" : "bg-white text-navy-mute ring-1 ring-line"}`}>
-              {t.done && <Check size={15} aria-hidden />} {t.name}
-            </li>
-          ))}
-        </ul>
-        <p className="text-sm text-navy-mute">Answers stay hidden on this screen until the reveal, so it's safe to project.</p>
-        <button className="btn-ghost" disabled={busy} onClick={onReveal}><Eye size={17} aria-hidden /> End now and reveal</button>
-      </div>
-    </div>
-  );
-}
-
-function Finished({ state }: { state: RoomState }) {
-  const rv = state.reveal!;
-  const real = state.results!;
-  const [sample, setSample] = useState<Results | null>(null);
-  const [sampleErr, setSampleErr] = useState<string | null>(null);
-  const res = real.locked ? sample : real;
-
+    );
+  }
   return (
-    <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-start">
-      <div className="grid gap-5">
-        {real.locked && !sample && (
-          <div className="rounded-xl border border-line bg-white p-5">
-            <h2 className="flex items-center gap-2 text-lg font-bold"><Lock size={18} aria-hidden /> Breakdown hidden for privacy</h2>
-            <p className="mt-1 text-navy-soft">
-              {real.teams_submitted} {real.teams_submitted === 1 ? "team" : "teams"} answered. Response breakdowns appear only when at least {real.min_teams} teams have answered, so no single team can be identified.
-            </p>
-            <button className="btn-ghost mt-4" onClick={() => api.roomSample(state.code, tokens.get("host", state.code)?.token ?? "").then(setSample).catch((e) => setSampleErr(e.message))}>
-              Show sample data instead
-            </button>
-            {sampleErr && <p className="mt-2 text-coral-ink">{sampleErr}</p>}
-          </div>
-        )}
-        {res && <ResultsView res={res} state={state} />}
-      </div>
-      <div className="grid gap-5">
-        <AttemptSheet round={state.round} mode="review" firstError={rv.first_incorrect_step} compact />
-        <SolutionPanel reveal={rv} />
-        <Link to="/professor" className="btn-primary">Set up another round</Link>
-      </div>
-    </div>
-  );
-}
-
-function Stat({ pct, label }: { pct: number; label: string }) {
-  return (
-    <div className="rounded-xl border border-line bg-white p-4">
-      <p className="font-display text-4xl font-extrabold">{pct}%</p>
-      <p className="text-[15px] text-navy-soft">{label}</p>
-    </div>
-  );
-}
-
-function ResultsView({ res, state }: { res: Results; state: RoomState }) {
-  const rv = state.reveal!;
-  const steps = Object.entries(res.catch_counts ?? {}).map(([k, count]) => ({
-    key: k, count, label: k === "none" ? "No mistake" : `Step ${k}`,
-  }));
-  const right = rv.is_fully_correct ? "none" : String(rv.first_incorrect_step);
-  return (
-    <>
-      {res.sample && (
-        <p className="rounded-lg bg-violet-wash px-4 py-3 font-bold text-violet-ink" role="note">
-          Sample data for demonstration. These are invented teams, not responses from this class.
+    <div className="grid gap-4 rounded-xl border border-line bg-white p-5">
+      <p><span className="font-display text-4xl font-extrabold">{r.pct_correct}%</span> <span className="text-navy-soft">of teams got it right</span></p>
+      <Bars highlight={String(r.correct)} rows={(r.counts ?? []).map((c, k) => ({ key: String(k), count: c, label: <b>Option {LETTERS[k]}</b> }))} />
+      {r.top_wrong && (
+        <p className="rounded-lg bg-coral-wash px-4 py-3 text-[15px]">
+          Most common wrong answer: <b>{LETTERS[r.top_wrong.option]}</b> ({r.top_wrong.count} {r.top_wrong.count === 1 ? "team" : "teams"})
+          {r.top_wrong.label && <>. Usually a sign of: <b>{r.top_wrong.label.toLowerCase()}</b>.</>}
         </p>
       )}
-      <div className={`grid gap-3 ${rv.is_fully_correct ? "grid-cols-1" : "sm:grid-cols-3"}`}>
-        <Stat pct={res.pct_caught ?? 0} label={rv.is_fully_correct ? "said there was no mistake" : `found the first mistake (step ${rv.first_incorrect_step})`} />
-        {!rv.is_fully_correct && <Stat pct={res.pct_fix ?? 0} label="chose the correct fix" />}
-        {!rv.is_fully_correct && <Stat pct={res.pct_why ?? 0} label="named the right reason" />}
-      </div>
-      {res.insights && res.insights.length > 0 && (
-        <section className="rounded-xl bg-navy p-5 text-white">
-          <h2 className="text-lg font-bold text-white">What the room thought</h2>
-          <ul className="mt-2 grid gap-1.5 text-white/90">{res.insights.map((s) => <li key={s}>{s}</li>)}</ul>
-        </section>
+    </div>
+  );
+}
+
+function Finished({ state, summary, token }: { state: RoomState; summary: QuizSummary; token: string }) {
+  const [sample, setSample] = useState<QuizSummary | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const s = summary.locked ? sample : summary;
+  return (
+    <div className="mt-6 grid gap-6">
+      {summary.locked && !sample && (
+        <div className="max-w-2xl rounded-xl border border-line bg-white p-5">
+          <h2 className="flex items-center gap-2 text-lg font-bold"><Lock size={18} aria-hidden /> Summary hidden for privacy</h2>
+          <p className="mt-1 text-navy-soft">{summary.teams} {summary.teams === 1 ? "team" : "teams"} took part. The class summary appears when at least {summary.min_teams} teams play, so no single team can be identified.</p>
+          <button className="btn-ghost mt-4" onClick={() => api.sample(state.code, token).then(setSample).catch((e) => setErr(e.message))}>Show sample data instead</button>
+          {err && <p className="mt-2 text-coral-ink">{err}</p>}
+        </div>
       )}
-      <section className="rounded-xl border border-line bg-white p-5">
-        <h2 className="text-lg font-bold">Which step teams flagged</h2>
-        <div className="mt-3"><Bars rows={steps} highlight={right} /></div>
-      </section>
-      {!rv.is_fully_correct && res.why_counts && (
-        <section className="rounded-xl border border-line bg-white p-5">
-          <h2 className="text-lg font-bold">Reasons teams gave</h2>
-          <div className="mt-3"><Bars rows={res.why_counts.map((w) => ({ key: w.id, label: w.label, count: w.count }))} highlight={rv.correct_why} /></div>
-        </section>
+      {s && (
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-start">
+          <div className="grid gap-5">
+            {s.sample && <p className="rounded-lg bg-violet-wash px-4 py-3 font-bold text-violet-ink" role="note">Sample data for demonstration. These are invented teams, not responses from this class.</p>}
+            {s.insights && s.insights.length > 0 && (
+              <section className="rounded-xl bg-navy p-5 text-white">
+                <h2 className="text-lg font-bold text-white">What the class found hard</h2>
+                <ul className="mt-2 grid gap-1.5 text-white/90">{s.insights.map((t) => <li key={t}>{t}</li>)}</ul>
+              </section>
+            )}
+            <section className="rounded-xl border border-line bg-white p-5">
+              <h2 className="text-lg font-bold">Right answers per question</h2>
+              <div className="mt-3">
+                <Bars rows={(s.questions ?? []).map((q) => ({ key: String(q.index), count: q.pct_correct ?? 0, label: <span>Q{q.index + 1} <span className="text-navy-mute">({q.pct_correct ?? 0}%)</span></span> }))} />
+              </div>
+            </section>
+          </div>
+          {s.scoreboard && (
+            <section className="rounded-xl border border-line bg-white p-5">
+              <h2 className="text-lg font-bold">Scores</h2>
+              <ol className="mt-2 divide-y divide-line">
+                {s.scoreboard.map((t, i) => (
+                  <li key={t.name} className="flex justify-between py-2">
+                    <span><span className="mr-3 font-display font-bold text-navy-mute">{i + 1}</span>{t.name}</span>
+                    <span className="font-display font-bold">{t.score}/{s.total}</span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+        </div>
       )}
-      {res.scoreboard && (
-        <section className="rounded-xl border border-line bg-white p-5">
-          <h2 className="text-lg font-bold">Scores</h2>
-          <ol className="mt-2 divide-y divide-line">
-            {res.scoreboard.map((t, i) => (
-              <li key={t.name} className="flex justify-between py-2">
-                <span><span className="mr-3 font-display font-bold text-navy-mute">{i + 1}</span>{t.name}</span>
-                <span className="font-display font-bold">{t.points}/{res.max_points}</span>
-              </li>
-            ))}
-          </ol>
-        </section>
-      )}
-    </>
+      <Link to="/professor" className="btn-primary justify-self-start">Set up another quiz</Link>
+    </div>
   );
 }

@@ -1,4 +1,4 @@
-// Exact, offline answer checker for Your Turn exercises.
+// Exact, offline answer checker for typed Calculus answers.
 //
 // What it can PROVE: equality of Laurent polynomials in x with rational
 // coefficients (sums of c·x^k, k any integer), after expanding products and

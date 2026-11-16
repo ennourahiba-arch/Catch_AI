@@ -34,7 +34,7 @@ def passages(c):
     return r.json()["passages"]
 
 
-def gen(c, fmt="quiz", count=4):
+def gen(c, fmt="quiz", count=5):
     r = c.post("/api/generate", json={"format": fmt, "passages": passages(c), "count": count})
     assert r.status_code == 200, r.text
     return r.json()
@@ -110,32 +110,27 @@ def test_ai_off_without_provider(client, monkeypatch):
     assert r.status_code == 503
 
 
-def test_quiz_pack_is_grounded_and_consistent(client):
+def test_quiz_bank_is_grounded(client):
     ps = passages(client)
-    pack = client.post("/api/generate", json={"format": "quiz", "passages": ps, "count": 5}).json()
-    assert len(pack["rounds"]) == 5 and len(pack["exercises"]) == 5
-    assert sum(r["is_fully_correct"] for r in pack["rounds"]) == 1
-    assert pack["generator"]["test_mode"] is True
-    why_ids = [w["id"] for r in pack["rounds"] for w in r["why_options"]]
-    assert len(why_ids) == len(set(why_ids))  # unique across rounds
+    pack = client.post("/api/generate", json={"format": "quiz", "passages": ps, "count": 8}).json()
+    assert len(pack["exercises"]) == 8 and pack["version"] == 2 and pack["generator"]["test_mode"] is True
+    assert pack["exam_profile"]["duration_minutes"] == 90
     texts = " ".join(p["text"] for p in ps)
-    for r in pack["rounds"]:
-        for sol in r["correct_solution"]:
-            assert genpack.quote_found(sol["quote"], texts)
-        if not r["is_fully_correct"]:
-            assert r["correct_fix"] in [o["id"] for o in r["fix_options"]]
-            assert r["source_provenance"]["method"] == "llm-grounded"
+    for e in pack["exercises"]:
+        assert e["answer"]["kind"] == "mcq" and len(e["options"]) == 4
+        assert e["labels"][e["answer"]["correct"]] is None
+        assert genpack.quote_found(e["solution"][0]["quote"], texts)
 
 
-def test_fabricated_quote_drops_the_round(client):
+def test_fabricated_quote_drops_the_question(client):
     def liar(system, user):
         out = json.loads(fake_ai.respond(system, user))
         if "TASK: generate_quiz" in user:
-            out["rounds"][1]["questions"][0]["quote"] = "this sentence appears nowhere in the course material"
+            out["questions"][1]["quote"] = "this sentence appears nowhere in the course material"
         return json.dumps(out)
     llm.FAKE_RESPONDER = liar
-    pack = gen(client, count=4)
-    assert len(pack["rounds"]) == 3
+    pack = gen(client, count=5)
+    assert len(pack["exercises"]) == 4
     assert any("quote wasn't found" in d for d in pack["dropped"])
 
 
@@ -143,60 +138,39 @@ def test_independent_review_can_reject(client):
     def flagged(system, user):
         out = json.loads(fake_ai.respond(system, user))
         if "TASK: generate_quiz" in user:
-            out["rounds"][2]["questions"][3]["question"] = "REJECT_ME ambiguous question"
+            out["questions"][2]["question"] = "REJECT_ME ambiguous question"
         return json.dumps(out)
     llm.FAKE_RESPONDER = flagged
-    pack = gen(client, count=4)
-    assert len(pack["rounds"]) == 3
+    pack = gen(client, count=5)
+    assert len(pack["exercises"]) == 4
     assert any("independent review" in d for d in pack["dropped"])
 
 
-def test_inconsistent_answer_key_is_dropped(client):
-    def bad_key(system, user):
+def test_duplicate_options_dropped(client):
+    def dup(system, user):
         out = json.loads(fake_ai.respond(system, user))
         if "TASK: generate_quiz" in user:
-            out["rounds"][1]["wrong_question"] = 4  # AI's wrong answer is actually Q2
+            out["questions"][0]["options"][1] = out["questions"][0]["options"][0]
         return json.dumps(out)
-    llm.FAKE_RESPONDER = bad_key
-    pack = gen(client, count=3)
-    assert any("answer key" in d for d in pack["dropped"])
+    llm.FAKE_RESPONDER = dup
+    assert any("duplicate" in d for d in gen(client, count=4)["dropped"])
 
 
-def test_written_and_oral_packs(client):
-    w = gen(client, "written", 3)
-    assert len(w["rounds"]) == 3 and w["exercises"][0]["answer"]["kind"] == "open"
-    o = gen(client, "oral", 3)
-    assert o["oral"]["examiner_questions"] and o["oral"]["candidate_scenarios"]
+def test_written_and_oral_banks(client):
+    w = gen(client, "written", 4)
+    assert w["exercises"][0]["answer"]["kind"] == "open"
+    o = gen(client, "oral", 4)
+    assert len(o["exercises"]) == 4 and o["format"] == "oral"
 
 
-# --- class game with an uploaded round ---------------------------------------
-
-def test_class_game_with_generated_round(client):
-    pack = gen(client, count=3)
-    r = next(x for x in pack["rounds"] if not x["is_fully_correct"])
-    res = client.post("/api/rooms", json={"custom_round": r})
-    assert res.status_code == 200, res.text
-    code, host = res.json()["code"], {"X-Host-Token": res.json()["host_token"]}
-    teams = [{"X-Team-Token": client.post(f"/api/rooms/{code}/join", json={"team_name": n}).json()["team_token"]} for n in "ABC"]
-    client.post(f"/api/rooms/{code}/start", headers=host)
-    state = client.get(f"/api/rooms/{code}/state", headers=teams[0]).json()
-    assert state["topic_name"] == pack["title"]
-    assert "correct_fix" not in json.dumps(state)
-    for t in teams:
-        client.post(f"/api/rooms/{code}/submit", json={"phase": "catch", "choice": str(r["first_incorrect_step"])}, headers=t)
-        client.post(f"/api/rooms/{code}/submit", json={"phase": "fix", "choice": r["correct_fix"]}, headers=t)
-        client.post(f"/api/rooms/{code}/submit", json={"phase": "explain", "choice": r["correct_why"]}, headers=t)
-    client.post(f"/api/rooms/{code}/reveal", headers=host)
-    out = client.get(f"/api/rooms/{code}/state", headers=host).json()
-    assert out["results"]["pct_caught"] == 100
-    assert out["reveal"]["provenance"] == "llm-grounded"
-    assert out["reveal"]["correct_why_label"].startswith("Simulated misconception")
-
-
-def test_inconsistent_custom_round_rejected(client):
-    r = next(x for x in gen(client, count=3)["rounds"] if not x["is_fully_correct"])
-    r["correct_fix"] = "f9"
-    assert client.post("/api/rooms", json={"custom_round": r}).status_code == 422
+def test_class_quiz_from_uploaded_questions(client):
+    pack = gen(client, count=4)
+    qs = [{"id": e["id"], "prompt": e["prompt"], "options": [{"text": o} for o in e["options"]],
+           "correct": e["answer"]["correct"], "labels": e["labels"], "solution": e["solution"]} for e in pack["exercises"]]
+    r = client.post("/api/rooms", json={"title": pack["title"], "questions": qs})
+    assert r.status_code == 200, r.text
+    code = r.json()["code"]
+    assert client.get(f"/api/rooms/{code}/state").json()["title"] == "Simulated course"
 
 
 # --- oral, grading, guards -----------------------------------------------------
@@ -211,16 +185,12 @@ def test_examiner_never_leaks_before_question_closes(client):
     assert r["guarded"] is True and "saves the registers" not in r["reply"]
 
 
-def test_candidate_never_reveals_correction(client):
-    sc = {"topic": "round robin", "false_claim": "Round robin never preempts.", "why": "skimming",
-          "correct_claim": "Round robin preempts a process when its time quantum expires."}
-    llm.FAKE_RESPONDER = lambda s, u: json.dumps({"reply": "Actually round robin preempts a process when its time quantum expires."})
-    r = client.post("/api/oral/candidate", json={"scenario": sc, "history": [{"role": "student", "text": "Were you wrong?"}]}).json()
-    assert "time quantum expires" not in r["reply"]
-    llm.FAKE_RESPONDER = None
-    j = client.post("/api/oral/judge", json={"scenario": {**sc, "false_claim": "It is never used in practice."},
-                                            "history": [], "claimed_mistake": "it said this is never used"}).json()
-    assert j["caught"] is True
+def test_examiner_follow_up_with_common_words_is_allowed(client):
+    q = {"question": "What is round robin?", "key_points": ["an example", "time quantum"],
+         "model_answer": "Round robin gives each process a fixed time quantum and preempts it when it expires."}
+    hist = [{"role": "examiner", "text": q["question"]}, {"role": "student", "text": "It's a scheduling policy."}]
+    r = client.post("/api/oral/examiner", json={"question": q, "history": hist}).json()
+    assert r["guarded"] is False and "example" in r["reply"]
 
 
 def test_grading(client):
@@ -233,8 +203,8 @@ def test_rate_limit_and_access_code(client, monkeypatch):
     monkeypatch.setitem(ratelimit.LIMITS, "generate", 2)
     ps = passages(client)
     for _ in range(2):
-        assert client.post("/api/generate", json={"format": "quiz", "passages": ps, "count": 2}).status_code == 200
-    assert client.post("/api/generate", json={"format": "quiz", "passages": ps, "count": 2}).status_code == 429
+        assert client.post("/api/generate", json={"format": "quiz", "passages": ps, "count": 3}).status_code == 200
+    assert client.post("/api/generate", json={"format": "quiz", "passages": ps, "count": 3}).status_code == 429
     monkeypatch.setenv("ACCESS_CODE", "calc2026")
     r = client.post("/api/grade", json={"question": "Q", "key_points": ["a"], "model_answer": "m", "answer": "x"})
     assert r.status_code == 401

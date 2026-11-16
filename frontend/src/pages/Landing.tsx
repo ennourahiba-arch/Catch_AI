@@ -1,94 +1,100 @@
 import { Link } from "react-router-dom";
-import { BadgeCheck, GraduationCap, Presentation } from "lucide-react";
-import AttemptSheet from "../components/AttemptSheet";
-import Math from "../components/Math";
-import { usePack } from "../components/usePack";
+import { BadgeCheck, Check, GraduationCap, ListChecks, MessagesSquare, PenLine, Presentation } from "lucide-react";
+import TeX from "../components/Math";
 
-const DEMO_ID = "int-demo-endpoints";
+/** A static preview of what a practice question looks like. */
+function PaperPreview() {
+  return (
+    <div className="sheet overflow-hidden" aria-label="Example practice question">
+      <div className="flex items-baseline justify-between border-b border-line bg-paper/70 py-2.5 pl-[4.25rem] pr-4 text-[15px]">
+        <span className="font-bold text-violet-ink">Question 3 of 5</span>
+        <span className="text-navy-mute">Chain rule</span>
+      </div>
+      <div className="grid gap-4 py-5 pl-[4.25rem] pr-5">
+        <div>
+          <p className="text-navy-soft">Find f′(x).</p>
+          <TeX tex="f(x) = (2x + 3)^{4}" className="text-xl" />
+        </div>
+        <div className="rounded-lg border border-line px-4 py-3">
+          <p className="text-sm text-navy-mute">Your answer</p>
+          <p className="font-mono text-lg">8(2x+3)^3</p>
+        </div>
+        <p className="flex items-center gap-2 rounded-lg bg-teal-wash px-4 py-3 font-bold text-teal-ink">
+          <Check size={18} aria-hidden /> Correct, first try. Checked exactly, not approximately.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+const FORMATS = [
+  { icon: ListChecks, title: "Multiple choice", text: "Graded instantly. Wrong options are the mistakes students really make, so you learn which trap you fell into." },
+  { icon: PenLine, title: "Written exam", text: "Write your answer as you would on paper. It's graded against your course, with the key points you missed." },
+  { icon: MessagesSquare, title: "Oral exam", text: "An examiner asks you questions in a chat, follows up when you're vague, and won't hand you the answer." },
+];
 
 export default function Landing() {
-  const { pack } = usePack();
-  const demo = pack?.rounds.find((r) => r.id === DEMO_ID);
-
   return (
     <>
-      <section className="mx-auto grid max-w-6xl gap-10 px-4 pb-16 pt-10 sm:pt-16 lg:grid-cols-[1fr_1.05fr] lg:items-center">
+      <section className="mx-auto grid max-w-6xl gap-10 px-4 pb-16 pt-10 sm:pt-16 lg:grid-cols-[1fr_1fr] lg:items-center">
         <div>
-          <h1 className="text-[2.6rem] font-extrabold leading-[1.02] sm:text-6xl">
-            Catch the mistake before your exam catches you.
-          </h1>
+          <h1 className="text-[2.6rem] font-extrabold leading-[1.02] sm:text-6xl">Practice in the format of your real exam.</h1>
           <p className="mt-5 max-w-[34rem] text-lg text-navy-soft">
-            Here the AI is the student. It answers exam questions with total confidence and slips up the way real students do.
-            You mark its work: find the first wrong step, fix it, and say why it went wrong. Start with our verified Calculus pack,
-            or upload your own course, in any subject.
+            Upload your course and past exams. Rehearsal writes practice questions in the same style, grades your answers,
+            and shows you how ready you are, for any subject.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link to="/student" className="btn-primary"><GraduationCap size={18} aria-hidden /> I'm a student</Link>
             <Link to="/professor" className="btn-ghost"><Presentation size={18} aria-hidden /> I'm a professor</Link>
           </div>
           <p className="mt-5">
-            <Link to={`/play/${DEMO_ID}`} className="font-bold text-violet-ink underline decoration-2 underline-offset-4 hover:text-navy">
-              Try a sample round now
-            </Link>
+            <Link to="/practice/chain-rule" className="font-bold text-violet-ink underline decoration-2 underline-offset-4 hover:text-navy">Try a Calculus practice session</Link>
             <span className="text-navy-mute">, no sign-up needed.</span>
           </p>
         </div>
-
-        <div className="relative">
-          {demo ? (
-            <>
-              <div className="mb-3 flex items-baseline justify-between gap-3">
-                <Math tex={demo.problem_statement.latex} className="text-lg" />
-                <span className="shrink-0 text-[15px] text-navy-mute">Find the absolute max</span>
-              </div>
-              <AttemptSheet round={demo} mode="static" firstError={4} compact />
-              <p className="mt-3 text-[15px] text-navy-mute">
-                The AI never checked the endpoints. At <Math tex="x = 4" />, <Math tex="f(4) = 6" />, which beats 0.385.
-              </p>
-            </>
-          ) : (
-            <div className="sheet h-[26rem] animate-pulse" aria-hidden />
-          )}
-        </div>
+        <PaperPreview />
       </section>
 
       <section className="border-y border-line bg-white">
         <div className="mx-auto max-w-6xl px-4 py-14">
-          <h2 className="text-3xl font-bold">How a round works</h2>
+          <h2 className="text-3xl font-bold">How a practice session works</h2>
           <ol className="mt-8 grid gap-8 sm:grid-cols-3">
             {[
-              ["Catch", "Find the first step where the AI's reasoning breaks, or decide that there is no mistake at all."],
-              ["Fix", "Choose the line that should replace the broken step."],
-              ["Explain", "Name the misconception behind it, so you spot the same trap in your own work."],
+              ["Rate your confidence", "Before you start, say how ready you feel. Later you'll see how that compares with your results."],
+              ["Answer five questions", "In your exam's format. Hints unlock as you try, and every answer ends with a worked solution."],
+              ["See what to work on", "A readiness score, the mistake you keep making, and what to practice next."],
             ].map(([t, d], i) => (
               <li key={t} className="flex gap-4">
                 <span className="font-display text-4xl font-extrabold text-coral">{i + 1}</span>
-                <div>
-                  <h3 className="text-xl font-bold">{t}</h3>
-                  <p className="mt-1 text-navy-soft">{d}</p>
-                </div>
+                <div><h3 className="text-xl font-bold">{t}</h3><p className="mt-1 text-navy-soft">{d}</p></div>
               </li>
             ))}
           </ol>
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-6xl gap-10 px-4 py-14 md:grid-cols-2">
-        <div>
-          <h2 className="text-2xl font-bold">Home Mode</h2>
-          <p className="mt-2 text-navy-soft">
-            Train on your own: rate your confidence, catch the AI's mistake with hints when you need them, then solve a fresh
-            problem yourself. Your readiness is based on that last part. Progress stays on your device, and it works offline.
-          </p>
-          <Link to="/student" className="mt-4 inline-block font-bold text-violet-ink underline decoration-2 underline-offset-4">Start training</Link>
+      <section className="mx-auto max-w-6xl px-4 py-14">
+        <h2 className="text-3xl font-bold">Three exam formats</h2>
+        <div className="mt-6 grid gap-6 md:grid-cols-3">
+          {FORMATS.map((f) => (
+            <div key={f.title}>
+              <f.icon size={22} className="text-violet-ink" aria-hidden />
+              <h3 className="mt-2 text-xl font-bold">{f.title}</h3>
+              <p className="mt-1 text-navy-soft">{f.text}</p>
+            </div>
+          ))}
         </div>
-        <div>
-          <h2 className="text-2xl font-bold">Class Mode</h2>
-          <p className="mt-2 text-navy-soft">
-            A three-minute team challenge in the middle of a lecture. Teams join by QR code on one phone each, and the professor
-            sees which misconceptions the room fell for.
-          </p>
-          <Link to="/professor" className="mt-4 inline-block font-bold text-violet-ink underline decoration-2 underline-offset-4">Set up a class challenge</Link>
+        <div className="mt-12 grid gap-10 md:grid-cols-2">
+          <div>
+            <h2 className="text-2xl font-bold">On your own</h2>
+            <p className="mt-2 text-navy-soft">Short sessions, at your pace. Progress stays on your device, and practice works offline once the questions are saved.</p>
+            <Link to="/student" className="mt-4 inline-block font-bold text-violet-ink underline decoration-2 underline-offset-4">Start practicing</Link>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold">In class</h2>
+            <p className="mt-2 text-navy-soft">A live quiz in the middle of a lecture. Teams answer on one phone each, and after every question the professor sees what the room got wrong, and why.</p>
+            <Link to="/professor" className="mt-4 inline-block font-bold text-violet-ink underline decoration-2 underline-offset-4">Run a class quiz</Link>
+          </div>
         </div>
       </section>
 
@@ -96,10 +102,10 @@ export default function Landing() {
         <div className="flex gap-4 rounded-xl bg-navy p-6 text-white sm:p-8">
           <BadgeCheck className="mt-1 shrink-0 text-teal" size={26} aria-hidden />
           <div>
-            <h2 className="text-2xl font-bold text-white">Checked by mathematics, not by the AI</h2>
-            <p className="mt-2 max-w-[42rem] text-white/80">
-              Every step, fix and answer is verified symbolically with SymPy before a round is published. Rounds the checker can't
-              decide never reach you. The AI is not here to think instead of you. It's here to make you think.
+            <h2 className="text-2xl font-bold text-white">Questions you can trust</h2>
+            <p className="mt-2 max-w-[44rem] text-white/80">
+              Calculus questions are verified with SymPy, a symbolic maths library, and typed answers are checked exactly. Questions from
+              your own course quote it word for word, are reviewed by a second, independent AI, and professors approve them before class.
             </p>
           </div>
         </div>

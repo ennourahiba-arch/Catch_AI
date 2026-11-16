@@ -1,7 +1,7 @@
 """Acceptance Test H: known Calculus cases produce the correct verdict."""
 import pytest
 
-from catchai.verify import INVALID, UNVERIFIABLE, VALID, check_claim, first_invalid_step
+from rehearsal.verify import INVALID, UNVERIFIABLE, VALID, check_claim, first_invalid_step
 
 DEMO_F = "x**3 - 6*x**2 + 11*x - 6"
 

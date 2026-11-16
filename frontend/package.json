@@ -1,14 +1,15 @@
 {
-  "name": "catch-the-ai",
+  "name": "rehearsal",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "check": "tsc -b && vitest run"
   },
   "dependencies": {
     "framer-motion": "11.11.17",

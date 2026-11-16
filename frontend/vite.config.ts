@@ -7,7 +7,7 @@ import react from "@vitejs/plugin-react";
  * (Home Mode + the verified pack) works offline after one online visit. */
 function offlineServiceWorker(): Plugin {
   return {
-    name: "catch-ai-offline-sw",
+    name: "rehearsal-offline-sw",
     apply: "build",
     generateBundle(_, bundle) {
       const built = Object.keys(bundle).filter((f) => /\.(js|css|woff2|svg|png)$/.test(f)).map((f) => `/${f}`);
@@ -21,8 +21,8 @@ function offlineServiceWorker(): Plugin {
 }
 
 const swSource = (version: string, precache: string[]) => `// Generated at build time. Do not edit.
-const CACHE = "catch-ai-${version}";
-const RUNTIME = "catch-ai-runtime";
+const CACHE = "rehearsal-${version}";
+const RUNTIME = "rehearsal-runtime";
 const PRECACHE = ${JSON.stringify(precache)};
 
 self.addEventListener("install", (e) => {

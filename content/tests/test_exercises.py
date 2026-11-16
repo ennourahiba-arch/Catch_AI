@@ -2,22 +2,16 @@
 the class the browser checker can prove (rational Laurent polynomials / rationals)."""
 import sympy as sp
 
-from catchai.exercises import all_exercises, check_exercise, checker_vectors, laurent_coeffs, NotSupported
-from catchai.verify import x
+from rehearsal.exercises import all_exercises, check_exercise, checker_vectors, laurent_coeffs, NotSupported
+from rehearsal.verify import x
 
 
 def test_all_exercises_verify():
     ex = all_exercises()
-    assert len(ex) >= 16
+    assert len(ex) >= 32
     assert {e["topic"] for e in ex} == {"derivatives", "chain-rule", "critical-points", "closed-interval"}
     for e in ex:
         check_exercise(e)
-
-
-def test_exercises_are_distinct_from_catch_rounds():
-    from catchai.templates import all_drafts
-    round_problems = {d["problem_latex"] for d in all_drafts()}
-    assert not any(e["latex"] in round_problems for e in all_exercises())
 
 
 def test_laurent_rejects_unprovable_forms():

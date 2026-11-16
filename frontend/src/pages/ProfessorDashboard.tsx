@@ -1,133 +1,126 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { BadgeCheck, FileUp, Loader2, Play, QrCode } from "lucide-react";
-import { api, tokens } from "../lib/api";
-import AttemptSheet from "../components/AttemptSheet";
-import Math from "../components/Math";
+import { BadgeCheck, ChevronDown, FileUp, Loader2, QrCode } from "lucide-react";
+import TeX from "../components/Math";
 import { ErrorState, Loading } from "../components/States";
 import { usePack } from "../components/usePack";
-import type { TopicId } from "../lib/types";
+import { LETTERS } from "../components/Live";
+import { api, tokens } from "../lib/api";
+import { listPacks } from "../lib/storage";
+import { isCurrentPack, type CustomPack, type TopicId } from "../lib/types";
 
 export default function ProfessorDashboard() {
   const { pack, error, retry } = usePack();
-  const [topic, setTopic] = useState<TopicId>("closed-interval");
-  const [roundId, setRoundId] = useState<string>("int-demo-endpoints");
-  const [minutes, setMinutes] = useState(3);
-  const [creating, setCreating] = useState(false);
-  const [createErr, setCreateErr] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [topic, setTopic] = useState<TopicId>("closed-interval");
+  const [picked, setPicked] = useState<string[]>([]);
+  const [open, setOpen] = useState<string | null>(null);
+  const [secs, setSecs] = useState(60);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [mine, setMine] = useState<CustomPack[]>([]);
+  useEffect(() => { listPacks().then((p) => setMine(p.filter((x) => isCurrentPack(x) && x.format === "quiz"))); }, []);
 
   if (error) return <ErrorState message={error} onRetry={retry} />;
   if (!pack) return <Loading />;
-  const rounds = pack.rounds.filter((r) => r.topic === topic);
-  const round = rounds.find((r) => r.id === roundId) ?? rounds[0];
-  const fix = round.fix_options.find((o) => o.id === round.correct_fix);
+  const qs = pack.exercises.filter((e) => e.topic === topic);
+  const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length < 20 ? [...p, id] : p));
+
+  async function launch() {
+    setBusy(true); setErr(null);
+    try {
+      const r = await api.createQuiz({ exercise_ids: picked, seconds_per_question: secs });
+      tokens.set("host", r.code, { token: r.host_token });
+      navigate(`/host/${r.code}`);
+    } catch (e) { setErr((e as Error).message); setBusy(false); }
+  }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-24 pt-8">
-      <h1 className="text-3xl font-bold sm:text-4xl">Prepare a class challenge</h1>
-      <p className="mt-1 max-w-[40rem] text-navy-mute">
-        {pack.subject}. Choose a topic and a verified round. You see the answer key here; students never do until the reveal.
+    <div className="mx-auto max-w-6xl px-4 pb-32 pt-8">
+      <h1 className="text-3xl font-bold sm:text-4xl">Run a live class quiz</h1>
+      <p className="mt-1 max-w-[42rem] text-navy-mute">
+        Pick exam-style questions, show the QR code, and teams answer on their phones one question at a time. After each one you see what the room got wrong, and why.
       </p>
 
-      <Link to="/create" className="mt-6 flex items-center justify-between gap-4 rounded-xl border-2 border-violet bg-white p-5 hover:bg-violet-wash/40">
-        <span>
-          <span className="block font-bold">Any subject: build rounds from your own course</span>
-          <span className="block text-[15px] text-navy-soft">Upload notes, slides and past exams. You review and approve each round before it reaches your class.</span>
-        </span>
-        <FileUp size={22} className="shrink-0 text-violet-ink" aria-hidden />
-      </Link>
-      <h2 className="mt-10 text-xl font-bold">Calculus 1: mathematically verified pack</h2>
+      <section className="mt-8 rounded-xl border-2 border-violet bg-white p-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="font-bold">Any subject: use your own course</h2>
+            <p className="text-[15px] text-navy-soft">Upload notes, slides and past exams to generate a multiple-choice bank. You approve each question before it reaches your class.</p>
+          </div>
+          <Link to="/create" className="btn-violet"><FileUp size={17} aria-hidden /> Upload a course</Link>
+        </div>
+        {mine.length > 0 && (
+          <ul className="mt-4 flex flex-wrap gap-2">
+            {mine.map((p) => <li key={p.id}><Link to={`/mine/${p.id}`} className="inline-block rounded-full bg-violet-wash px-4 py-2 font-bold text-violet-ink hover:underline">{p.title}</Link></li>)}
+          </ul>
+        )}
+      </section>
 
+      <h2 className="mt-10 text-xl font-bold">Calculus 1: mathematically verified questions</h2>
+      <p className="mt-1 text-[15px] text-navy-mute">Every answer is checked with SymPy, and every wrong option comes from a specific, common mistake.</p>
       <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="Topic">
         {pack.topics.map((t) => (
-          <button
-            key={t.id}
-            role="tab"
-            aria-selected={t.id === topic}
-            onClick={() => { setTopic(t.id); setRoundId(pack.rounds.find((r) => r.topic === t.id)!.id); }}
-            className={`min-h-[44px] rounded-full px-4 font-bold ${t.id === topic ? "bg-navy text-white" : "border border-line bg-white text-navy-soft hover:border-navy-mute"}`}
-          >
+          <button key={t.id} role="tab" aria-selected={t.id === topic} onClick={() => setTopic(t.id)}
+            className={`min-h-[44px] rounded-full px-4 font-bold ${t.id === topic ? "bg-navy text-white" : "border border-line bg-white text-navy-soft hover:border-navy-mute"}`}>
             {t.name}
           </button>
         ))}
       </div>
+      <div className="mt-3 flex gap-4 text-[15px]">
+        <button className="font-bold text-violet-ink underline underline-offset-4" onClick={() => setPicked((p) => [...new Set([...p, ...qs.map((q) => q.id)])].slice(0, 20))}>Select all in this topic</button>
+        {picked.length > 0 && <button className="font-bold text-navy-mute underline underline-offset-4" onClick={() => setPicked([])}>Clear selection</button>}
+      </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[17rem_minmax(0,1fr)]">
-        <ul className="grid content-start gap-2" aria-label="Rounds">
-          {rounds.map((r, i) => (
-            <li key={r.id}>
-              <button
-                onClick={() => setRoundId(r.id)}
-                aria-current={r.id === round.id}
-                className={`w-full rounded-xl border-2 bg-white px-4 py-3 text-left ${r.id === round.id ? "border-navy" : "border-transparent hover:border-line"}`}
-              >
-                <span className="block font-bold">
-                  Round {i + 1}{r.id.startsWith("int-demo") && <span className="ml-2 text-sm text-violet-ink">demo</span>}
-                </span>
-                <span className="block text-[15px] text-navy-mute">
-                  {r.is_fully_correct ? "No mistake" : pack.misconceptions[r.mistake_label!]}
-                </span>
-              </button>
+      <ul className="mt-4 grid gap-2.5">
+        {qs.map((e) => {
+          const m = e.mcq!;
+          const on = picked.includes(e.id);
+          return (
+            <li key={e.id} className={`rounded-xl border-2 bg-white ${on ? "border-navy" : "border-line"}`}>
+              <div className="flex items-start gap-3 p-4">
+                <input type="checkbox" checked={on} onChange={() => toggle(e.id)} aria-label={`Include: ${m.prompt}`} className="mt-1.5 h-5 w-5 shrink-0 accent-[#151631]" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold">{m.prompt} <span className="ml-1 text-sm font-normal text-navy-mute">difficulty {e.difficulty}</span></p>
+                  <TeX tex={e.latex} />
+                </div>
+                <button className="inline-flex items-center gap-1 text-sm font-bold text-violet-ink" aria-expanded={open === e.id} onClick={() => setOpen(open === e.id ? null : e.id)}>
+                  Options <ChevronDown size={16} className={open === e.id ? "rotate-180" : ""} aria-hidden />
+                </button>
+              </div>
+              {open === e.id && (
+                <ul className="grid gap-2 border-t border-line p-4">
+                  {m.options.map((o, k) => (
+                    <li key={k} className="flex items-start gap-3 text-[15px]">
+                      <span className={`font-display font-bold ${k === m.correct ? "text-teal-ink" : "text-navy-mute"}`}>{LETTERS[k]}</span>
+                      <span className="min-w-0"><TeX tex={o} />
+                        <span className={`block text-sm ${k === m.correct ? "font-bold text-teal-ink" : "text-navy-mute"}`}>{k === m.correct ? "Correct" : m.labels[k]}</span>
+                      </span>
+                    </li>
+                  ))}
+                  <li className="flex items-center gap-1.5 text-sm text-navy-mute"><BadgeCheck size={15} className="text-teal-ink" aria-hidden /> Verified with {e.verification?.checker}</li>
+                </ul>
+              )}
             </li>
-          ))}
-        </ul>
+          );
+        })}
+      </ul>
 
-        <div className="grid gap-5">
-          <div className="rounded-xl border border-line bg-white p-5">
-            <p className="text-[15px] text-navy-mute">{round.problem_statement.text} Difficulty {round.difficulty} of 3.</p>
-            <Math tex={round.problem_statement.latex} block className="mt-1 text-left text-lg" />
-          </div>
-          <AttemptSheet round={round} mode="static" firstError={round.first_incorrect_step} />
-
-          <section className="rounded-xl border border-line bg-white p-5" aria-labelledby="key-h">
-            <h2 id="key-h" className="text-lg font-bold">Answer key</h2>
-            {round.is_fully_correct ? (
-              <p className="mt-2">There is no mistake. Teams score by choosing <b>No mistake</b>.</p>
-            ) : (
-              <dl className="mt-3 grid gap-3">
-                <div><dt className="text-[15px] text-navy-mute">First error</dt><dd className="font-bold">Step {round.first_incorrect_step}</dd></div>
-                <div><dt className="text-[15px] text-navy-mute">Correct fix</dt><dd>{fix && <Math tex={fix.latex} />}</dd></div>
-                <div><dt className="text-[15px] text-navy-mute">Misconception</dt><dd className="font-bold">{pack.misconceptions[round.correct_why!]}</dd></div>
-              </dl>
-            )}
-            <p className="mt-4"><b>Teaching point:</b> {round.key_lesson}</p>
-            <p className="mt-4 flex items-start gap-1.5 text-sm text-navy-mute">
-              <BadgeCheck size={16} className="mt-0.5 shrink-0 text-teal-ink" aria-hidden />
-              {round.verification_status.claims_checked} claims verified with {round.verification_status.checker}. Source: hand-authored mistake template, pack v{round.pack_version}.
-            </p>
-          </section>
-
-          <div className="flex flex-wrap items-start gap-3">
-            <Link to={`/play/${round.id}`} className="btn-violet"><Play size={17} aria-hidden /> Try it as a student</Link>
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-paper/95 backdrop-blur" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <p><b>{picked.length}</b> {picked.length === 1 ? "question" : "questions"} selected{picked.length >= 20 && " (maximum)"}</p>
+          <div className="flex flex-wrap items-center gap-3">
             <label className="inline-flex min-h-[48px] items-center gap-2 rounded-full border border-line bg-white px-4">
-              <span className="text-[15px] text-navy-mute">Time</span>
-              <select value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} className="bg-transparent font-bold outline-none">
-                <option value={2}>2 min</option>
-                <option value={3}>3 min</option>
-                <option value={5}>5 min</option>
+              <span className="text-[15px] text-navy-mute">Per question</span>
+              <select value={secs} onChange={(e) => setSecs(Number(e.target.value))} className="bg-transparent font-bold outline-none">
+                {[30, 45, 60, 90, 120].map((s) => <option key={s} value={s}>{s} s</option>)}
               </select>
             </label>
-            <button
-              className="btn-primary"
-              disabled={creating}
-              onClick={async () => {
-                setCreating(true);
-                setCreateErr(null);
-                try {
-                  const r = await api.createRoom(round.id, minutes * 60);
-                  tokens.set("host", r.code, { token: r.host_token });
-                  navigate(`/host/${r.code}`);
-                } catch (e) {
-                  setCreateErr((e as Error).message);
-                  setCreating(false);
-                }
-              }}
-            >
-              {creating ? <Loader2 size={17} className="animate-spin" aria-hidden /> : <QrCode size={17} aria-hidden />} Create class session
+            <button className="btn-primary" disabled={!picked.length || busy} onClick={launch}>
+              {busy ? <Loader2 size={17} className="animate-spin" aria-hidden /> : <QrCode size={17} aria-hidden />} Create the quiz
             </button>
           </div>
-          {createErr && <p className="rounded-lg bg-coral-wash px-4 py-3 text-coral-ink" role="alert">{createErr}</p>}
+          {err && <p className="w-full text-coral-ink" role="alert">{err}</p>}
         </div>
       </div>
     </div>

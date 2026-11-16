@@ -30,7 +30,7 @@ export default function Layout() {
       </a>
       <header className="sticky top-0 z-30 border-b border-line bg-paper/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
-          <Link to="/" aria-label="Catch the AI home"><Logo /></Link>
+          <Link to="/" aria-label="Rehearsal home"><Logo /></Link>
           <nav className="flex items-center gap-1">
             <NavLink to="/student" className={navCls}>Student</NavLink>
             <NavLink to="/professor" className={navCls}>Professor</NavLink>

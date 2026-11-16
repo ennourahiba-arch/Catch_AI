@@ -30,8 +30,8 @@ export default function Join() {
 
   return (
     <div className="mx-auto max-w-md px-4 pb-24 pt-10">
-      <h1 className="text-3xl font-bold">Join the class game</h1>
-      <p className="mt-1 text-navy-mute">One phone per team. No accounts and no real names: just a team nickname for this round.</p>
+      <h1 className="text-3xl font-bold">Join the class quiz</h1>
+      <p className="mt-1 text-navy-mute">One phone per team. No accounts and no real names: just a team nickname for this quiz.</p>
 
       {existing && (
         <button className="btn-violet mt-6 w-full" onClick={() => navigate(`/class/${code}`)}>

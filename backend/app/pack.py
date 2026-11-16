@@ -1,9 +1,4 @@
-"""Loads the verified round pack and produces answer-safe views of rounds.
-
-The server is the only place that holds answer keys during a class game.
-`public_round` is what teams receive before the reveal: it contains no
-verdicts, claims, first-error index, correct options or solution.
-"""
+"""The verified Calculus pack, and conversion of its questions to class-quiz form."""
 from __future__ import annotations
 
 import json
@@ -19,52 +14,20 @@ def load_pack() -> dict[str, Any]:
     return json.loads(PACK_PATH.read_text(encoding="utf-8"))
 
 
-def get_round(round_id: str) -> dict[str, Any] | None:
-    return next((r for r in load_pack()["rounds"] if r["id"] == round_id), None)
+def get_exercise(eid: str) -> dict[str, Any] | None:
+    return next((e for e in load_pack()["exercises"] if e["id"] == eid), None)
 
 
-def public_round(r: dict[str, Any]) -> dict[str, Any]:
-    """Everything a team may see before answering. Deliberately excludes
-    is_fully_correct, verdicts and claims (they would reveal the answer)."""
+def topic_name(topic: str) -> str:
+    return next((t["name"] for t in load_pack()["topics"] if t["id"] == topic), topic)
+
+
+def calculus_question(e: dict[str, Any]) -> dict[str, Any]:
+    """A verified Calculus question in class-quiz form. Wrong options carry the mistake they come from."""
+    m = e["mcq"]
     return {
-        "id": r["id"],
-        "topic": r["topic"],
-        "difficulty": r["difficulty"],
-        "problem_statement": r["problem_statement"],
-        "steps": [{"n": s["n"], "text": s["text"], "latex": s.get("latex", ""), "detail": s.get("detail", "")} for s in r["steps"]],
-        "pack_version": r["pack_version"],
-    }
-
-
-def why_labels(r: dict[str, Any]) -> dict[str, str]:
-    return {**load_pack()["misconceptions"], **{w["id"]: w["label"] for w in r.get("why_options", [])}}
-
-
-def options_view(r: dict[str, Any]) -> dict[str, Any]:
-    """Fix and explanation options, shown to a team only after it has locked its catch."""
-    return {
-        "first_incorrect_step": r["first_incorrect_step"],
-        "fix_options": [{"id": o["id"], "text": o["text"], "latex": o["latex"]} for o in r["fix_options"]],
-        "why_options": r["why_options"],
-    }
-
-
-def reveal_view(r: dict[str, Any]) -> dict[str, Any]:
-    """The full verified answer, sent to everyone once the round has finished."""
-    correct_fix = next((o for o in r["fix_options"] if o["id"] == r["correct_fix"]), None)
-    return {
-        "is_fully_correct": r["is_fully_correct"],
-        "first_incorrect_step": r["first_incorrect_step"],
-        "correct_fix": r["correct_fix"],
-        "correct_fix_latex": correct_fix["latex"] if correct_fix else None,
-        "correct_fix_text": correct_fix["text"] if correct_fix else None,
-        "correct_why": r["correct_why"],
-        "correct_why_label": why_labels(r).get(r["correct_why"] or "", None),
-        "correct_solution": r["correct_solution"],
-        "verified_answer": {"latex": r["verified_answer"].get("latex", ""), "text": r["verified_answer"].get("text", "")},
-        "key_lesson": r["key_lesson"],
-        "checker": r["verification_status"]["checker"],
-        "claims_checked": r["verification_status"]["claims_checked"],
-        "provenance": r.get("source_provenance", {}).get("method", "template"),
-        "provenance_text": r.get("source_provenance", {}).get("description", ""),
+        "id": e["id"], "prompt": m["prompt"], "latex": e["latex"],
+        "options": [{"text": "", "latex": o} for o in m["options"]],
+        "correct": m["correct"], "labels": m["labels"],
+        "solution": [{"text": s["text"], "latex": s.get("latex", "")} for s in e["solution"]],
     }

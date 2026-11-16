@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Check, Lightbulb, PenLine, X } from "lucide-react";
+import { Check, Lightbulb, X } from "lucide-react";
 import TeX from "./Math";
 import { checkExpression, checkExtremum, checkPoints, type Verdict } from "../lib/mathcheck";
 import { addExerciseAttempt } from "../lib/storage";
@@ -11,7 +11,7 @@ const MAX_ATTEMPTS = 2;
 
 /** Independent exercise: no AI attempt to inspect, the student writes the answer.
  * Graded exactly and offline by lib/mathcheck.ts. */
-export default function MathYourTurn({ exercise, onDone }: { exercise: Exercise; onDone: () => void }) {
+export default function MathYourTurn({ exercise, onDone, header, nextLabel }: { exercise: Exercise; onDone: () => void; header: React.ReactNode; nextLabel: string }) {
   const a = exercise.answer as MathAnswer;
   const [main, setMain] = useState("");
   const [at, setAt] = useState("");
@@ -59,10 +59,7 @@ export default function MathYourTurn({ exercise, onDone }: { exercise: Exercise;
 
   return (
     <div className="grid gap-5">
-      <div>
-        <p className="flex items-center gap-2 font-bold text-violet-ink"><PenLine size={18} aria-hidden /> Your turn</p>
-        <h1 className="mt-1 text-2xl font-bold sm:text-3xl">No AI attempt this time. Solve it the way you would in the exam.</h1>
-      </div>
+      {header}
 
       <section className="rounded-xl border border-line bg-white p-5">
         <p className="text-navy-soft">{exercise.prompt}</p>
@@ -135,7 +132,7 @@ export default function MathYourTurn({ exercise, onDone }: { exercise: Exercise;
             <span>
               {done.correct
                 ? <><b>Correct{attempts === 1 ? ", first try" : ""}.</b> Checked exactly, not approximately.</>
-                : <><b>Not this time.</b> Here's the worked solution. This exercise counts toward your readiness either way.</>}
+                : <><b>Not this time.</b> Here's the worked solution.</>}
             </span>
           </div>
           <section className="rounded-xl border border-line bg-white p-5">
@@ -149,7 +146,7 @@ export default function MathYourTurn({ exercise, onDone }: { exercise: Exercise;
               ))}
             </ol>
           </section>
-          <button className="btn-violet justify-self-start" onClick={onDone}>See my readiness</button>
+          <button className="btn-primary justify-self-start" onClick={onDone}>{nextLabel}</button>
         </div>
       )}
     </div>

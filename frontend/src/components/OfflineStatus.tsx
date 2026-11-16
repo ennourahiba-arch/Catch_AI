@@ -23,8 +23,8 @@ export default function OfflineStatus({ pack }: { pack: Pack }) {
 
   const text: Record<S, string> = {
     checking: "Checking offline availability.",
-    saving: "Saving the app and the round pack to this device for offline use.",
-    ready: `Saved on this device. Home Mode, hints and answer checking work with no internet. Class games still need a connection.`,
+    saving: "Saving the app and the question bank to this device for offline use.",
+    ready: `Saved on this device. Calculus practice and multiple-choice practice on your courses work with no internet. Written grading, oral practice and class quizzes need a connection.`,
     dev: "Offline mode runs in the deployed app, not in local development.",
     unsupported: "This browser can't save the app for offline use.",
   };
@@ -36,7 +36,7 @@ export default function OfflineStatus({ pack }: { pack: Pack }) {
         Offline
       </h2>
       <p className="mt-1 text-[15px] text-navy-soft" role="status">{text[s]}</p>
-      <p className="mt-2 text-sm text-navy-mute">Pack {pack.subject} v{pack.pack_version}: {pack.rounds.length} AI rounds and {pack.exercises.length} exercises.</p>
+      <p className="mt-2 text-sm text-navy-mute">{pack.subject} question bank v{pack.pack_version}: {pack.exercises.length} verified questions.</p>
     </section>
   );
 }

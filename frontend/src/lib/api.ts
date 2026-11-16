@@ -1,4 +1,4 @@
-// Client for the classroom server (backend/). Set VITE_API_URL in Vercel.
+// Client for the Rehearsal server (backend/). Set VITE_API_URL in Vercel.
 export const API_URL = ((import.meta.env.VITE_API_URL as string | undefined) || "http://localhost:8000").replace(/\/$/, "");
 
 export class ApiError extends Error {
@@ -9,49 +9,31 @@ export class ApiError extends Error {
 
 export const cleanCode = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
 
-export interface StepView { n: number; text: string; latex: string; detail?: string }
-export interface PublicRound {
-  id: string; topic: string; difficulty: number; pack_version: string;
-  problem_statement: { text: string; latex: string };
-  steps: StepView[];
+export interface QuizOption { text: string; latex: string }
+export interface SolutionStep { text: string; latex?: string; quote?: string; source?: string }
+export interface QuestionResult {
+  correct: number; solution: SolutionStep[]; answered: number; min_teams: number; locked: boolean;
+  counts?: number[]; pct_correct?: number; top_wrong?: { option: number; count: number; label: string | null };
 }
-export interface Sub { choice: string; correct: boolean }
-export interface Results {
-  teams_joined: number; teams_submitted: number; min_teams: number; locked: boolean; max_points: number;
-  sample?: boolean;
-  catch_counts?: Record<string, number>;
-  pct_caught?: number; pct_fix?: number; pct_why?: number;
-  fix_counts?: Record<string, number>;
-  why_counts?: { id: string; label: string; count: number }[];
-  scoreboard?: { name: string; points: number }[];
+export interface QuizSummary {
+  teams: number; min_teams: number; locked: boolean; total: number; sample?: boolean;
+  questions?: { index: number; prompt: string; answered: number; pct_correct: number | null; top_wrong: QuestionResult["top_wrong"] | null }[];
+  scoreboard?: { name: string; score: number }[];
   insights?: string[];
 }
-export interface Reveal {
-  is_fully_correct: boolean; first_incorrect_step: number | null;
-  correct_fix: string | null; correct_fix_latex: string | null; correct_fix_text?: string | null;
-  correct_why: string | null; correct_why_label: string | null;
-  correct_solution: { text: string; latex: string; quote?: string; source?: string }[];
-  verified_answer: { latex: string; text?: string }; key_lesson: string; checker: string; claims_checked: number;
-  provenance?: string; provenance_text?: string;
-}
 export interface RoomState {
-  code: string; status: "lobby" | "running" | "finished";
-  duration_s: number; deadline_ms: number | null; server_now_ms: number; version: number;
-  topic_name: string; round: PublicRound; team_count: number; role: "host" | "team" | "viewer";
-  teams?: { name: string; submitted: boolean; done: boolean }[];
-  submitted_count?: number;
-  results?: Results;
-  you?: {
-    name: string; phase: "catch" | "fix" | "explain" | "done";
-    subs: Partial<Record<"catch" | "fix" | "explain", Sub>>;
-    points: number; max_points: number;
-    options?: {
-      first_incorrect_step: number;
-      fix_options: { id: string; text: string; latex: string }[];
-      why_options: { id: string; label: string }[];
-    };
-  };
-  reveal?: Reveal;
+  code: string; title: string; status: "lobby" | "question" | "reveal" | "finished";
+  q_index: number; total: number; per_q_s: number; deadline_ms: number | null; server_now_ms: number; version: number;
+  team_count: number; role: "host" | "team" | "viewer";
+  question?: { index: number; total: number; prompt: string; latex: string; options: QuizOption[] };
+  answered_count?: number;
+  result?: QuestionResult;
+  teams?: { name: string; answered: boolean }[];
+  summary?: QuizSummary;
+  you?: { name: string; score: number; answer: number | null; was_right?: boolean | null; history?: { index: number; was_right: boolean }[] };
+}
+export interface QuizQuestionIn {
+  id: string; prompt: string; latex?: string; options: QuizOption[]; correct: number; labels: (string | null)[]; solution: SolutionStep[];
 }
 
 export type Auth = { host?: string; team?: string };
@@ -90,7 +72,7 @@ async function call<T>(path: string, init: { method?: string; body?: unknown; au
 export interface AIStatus { enabled: boolean; provider: string | null; model: string | null; test_mode: boolean; access_code_required: boolean; max_files: number }
 export interface Passage { id: string; file: string; text: string }
 export interface ExtractResult { documents: { file: string; chars: number }[]; passages?: Passage[]; text?: string; truncated: boolean }
-export interface ChatMsg { role: "examiner" | "student" | "candidate"; text: string }
+export interface ChatMsg { role: "examiner" | "student"; text: string }
 
 export const accessCode = {
   get(): string { try { return localStorage.getItem("cta:access") ?? ""; } catch { return ""; } },
@@ -111,25 +93,17 @@ export const api = {
     call<{ verdict: "correct" | "partial" | "incorrect"; covered: number[]; feedback: string }>("/api/grade", { method: "POST", body }),
   examiner: (question: { question: string; key_points: string[]; model_answer: string; quote: string }, history: ChatMsg[]) =>
     call<{ reply: string; closed: boolean; score: number | null }>("/api/oral/examiner", { method: "POST", body: { question, history } }),
-  candidate: (scenario: object, history: ChatMsg[]) =>
-    call<{ reply: string; done: boolean }>("/api/oral/candidate", { method: "POST", body: { scenario, history } }),
-  judge: (scenario: object, history: ChatMsg[], claimed_mistake: string, correction: string) =>
-    call<{ caught: boolean; corrected: boolean; feedback: string; false_claim: string; correct_claim: string; why: string; quote: string }>(
-      "/api/oral/judge", { method: "POST", body: { scenario, history, claimed_mistake, correction } }),
-  createCustomRoom: (custom_round: object, duration_s: number) =>
-    call<{ code: string; host_token: string }>("/api/rooms", { method: "POST", body: { custom_round, duration_s } }),
-  roomSample: (code: string, host: string) => call<Results>(`/api/rooms/${code}/sample`, { auth: { host } }),
-  health: () => call<{ ok: boolean }>("/api/health"),
-  createRoom: (round_id: string, duration_s: number) =>
-    call<{ code: string; host_token: string }>("/api/rooms", { method: "POST", body: { round_id, duration_s } }),
+  // live class quiz
+  createQuiz: (body: { title?: string; exercise_ids?: string[]; questions?: QuizQuestionIn[]; seconds_per_question: number }) =>
+    call<{ code: string; host_token: string }>("/api/rooms", { method: "POST", body }),
   join: (code: string, team_name: string) =>
     call<{ team_token: string; team_name: string; code: string }>(`/api/rooms/${code}/join`, { method: "POST", body: { team_name } }),
   state: (code: string, auth: Auth) => call<RoomState>(`/api/rooms/${code}/state`, { auth }),
   start: (code: string, host: string) => call<RoomState>(`/api/rooms/${code}/start`, { method: "POST", auth: { host } }),
-  reveal: (code: string, host: string) => call<RoomState>(`/api/rooms/${code}/reveal`, { method: "POST", auth: { host } }),
-  submit: (code: string, team: string, phase: string, choice: string) =>
-    call<RoomState>(`/api/rooms/${code}/submit`, { method: "POST", body: { phase, choice }, auth: { team } }),
-  sample: (roundId: string) => call<Results>(`/api/demo/sample-results/${roundId}`),
+  next: (code: string, host: string) => call<RoomState>(`/api/rooms/${code}/next`, { method: "POST", auth: { host } }),
+  answer: (code: string, team: string, q_index: number, choice: number) =>
+    call<RoomState>(`/api/rooms/${code}/answer`, { method: "POST", body: { q_index, choice }, auth: { team } }),
+  sample: (code: string, host: string) => call<QuizSummary>(`/api/rooms/${code}/sample`, { auth: { host } }),
 };
 
 export const wsUrl = (code: string) => `${API_URL.replace(/^http/, "ws")}/api/rooms/${code}/ws`;

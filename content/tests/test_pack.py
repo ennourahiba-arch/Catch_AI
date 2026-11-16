@@ -1,76 +1,55 @@
-"""Integrity checks on the built pack: answer keys agree with the verifier."""
+"""Integrity of the published Calculus bank."""
 import json
 from pathlib import Path
 
 import pytest
+import sympy as sp
 
-from catchai.build_pack import build
-from catchai.verify import VALID, check_claim, first_invalid_step
+from rehearsal.build_pack import build
+from rehearsal.verify import x
 
-REQUIRED = ["id", "topic", "difficulty", "problem_statement", "steps", "first_incorrect_step",
-            "is_fully_correct", "mistake_label", "corrected_step", "fix_options", "why_options",
-            "correct_solution", "verified_answer", "hint_ladder", "source_provenance",
-            "verification_status", "pack_version"]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.fixture(scope="module")
-def result():
-    return build()
+def pack():
+    return build()["pack"]
 
 
-def test_no_drafts_rejected(result):
-    assert result["review"] == [], result["review"]
+def test_bank_size_and_topics(pack):
+    ex = pack["exercises"]
+    assert len(ex) >= 32
+    for t in ("derivatives", "chain-rule", "critical-points", "closed-interval"):
+        assert sum(e["topic"] == t for e in ex) >= 8
 
 
-def test_pack_size_and_mix(result):
-    rounds = result["pack"]["rounds"]
-    assert len(rounds) >= 15
-    share = sum(r["is_fully_correct"] for r in rounds) / len(rounds)
-    assert 0.15 <= share <= 0.35
-    assert {r["topic"] for r in rounds} == {"derivatives", "chain-rule", "critical-points", "closed-interval"}
+def test_every_question_has_a_valid_multiple_choice_version(pack):
+    for e in pack["exercises"]:
+        m = e["mcq"]
+        assert len(set(m["options"])) == 4 and 0 <= m["correct"] <= 3
+        assert m["options"][m["correct"]] == e["answer_latex"]
+        assert all(m["labels"][i] for i in range(4) if i != m["correct"])
 
 
-def test_required_fields(result):
-    for r in result["pack"]["rounds"]:
-        for k in REQUIRED:
-            assert k in r, f"{r['id']} missing {k}"
+def test_stored_answers_match_sympy():
+    """Rebuild each typed answer from its stored exact form and compare with SymPy's own result."""
+    from rehearsal.exercises import all_exercises
+    for e in all_exercises():
+        a = e["answer"]
+        if a["kind"] == "expression":
+            rebuilt = sum(sp.Rational(c) * x ** int(k) for k, c in a["coeffs"].items())
+            assert sp.simplify(rebuilt - e["_truth"]) == 0, e["id"]
+        elif a["kind"] == "points":
+            assert sorted(map(sp.Rational, a["values"])) == sorted(e["_truth"]), e["id"]
+        else:
+            best, locs, _ = e["_truth"]
+            assert sp.Rational(a["value"]) == best and sorted(map(sp.Rational, a["at"])) == sorted(locs), e["id"]
 
 
-def test_answer_keys_match_verifier(result):
-    for r in result["pack"]["rounds"]:
-        first, _ = first_invalid_step(r["steps"])
-        assert first == r["first_incorrect_step"], r["id"]
-        assert r["is_fully_correct"] == (first is None)
-        if first is None:
-            assert r["fix_options"] == [] and r["why_options"] == []
-            continue
-        valid = [o["id"] for o in r["fix_options"] if check_claim(o["claim"]).status == VALID]
-        assert valid == [r["correct_fix"]], r["id"]
-        assert r["correct_why"] in [w["id"] for w in r["why_options"]]
-        assert len(r["why_options"]) == 4
+def test_deterministic(pack):
+    assert build()["pack"]["content_hash"] == pack["content_hash"]
 
 
-def test_mandatory_demo_rounds(result):
-    by_id = {r["id"]: r for r in result["pack"]["rounds"]}
-    demo = by_id["int-demo-endpoints"]
-    assert demo["first_incorrect_step"] == 4 and demo["mistake_label"] == "forgot_endpoints"
-    assert demo["verified_answer"]["claim"]["value"] == "6"
-    assert demo["verified_answer"]["claim"]["at"] == ["4"]
-    lucky = by_id["int-demo-lucky"]
-    assert lucky["first_incorrect_step"] == 2 and lucky["mistake_label"] == "solved_f_not_fprime"
-    assert lucky["steps"][3]["verdict"] == VALID  # coincidentally correct final answer
-
-
-def test_build_is_deterministic(result):
-    again = build()
-    assert again["pack"]["content_hash"] == result["pack"]["content_hash"]
-
-
-def test_web_copy_matches(result):
-    web = Path(__file__).resolve().parents[2] / "frontend" / "public" / "packs" / "calculus1.json"
-    assert json.loads(web.read_text())["content_hash"] == result["pack"]["content_hash"]
-
-
-def test_backend_copy_matches(result):
-    api = Path(__file__).resolve().parents[2] / "backend" / "packs" / "calculus1.json"
-    assert json.loads(api.read_text())["content_hash"] == result["pack"]["content_hash"]
+def test_copies_match(pack):
+    for d in ("frontend/public/packs", "backend/packs"):
+        assert json.loads((ROOT / d / "calculus1.json").read_text())["content_hash"] == pack["content_hash"]

@@ -1,0 +1,77 @@
+"""Live class quiz rules: judging, per-question results, final summary. No I/O.
+
+Privacy: answer breakdowns for a question are shown only when at least
+MIN_TEAMS teams answered it, and the scoreboard only when at least MIN_TEAMS
+teams took part, so no small group can be singled out.
+"""
+from __future__ import annotations
+
+from collections import Counter
+from typing import Any
+
+MIN_TEAMS = 3
+LETTERS = "ABCD"
+
+
+def public_question(q: dict[str, Any], index: int, total: int) -> dict[str, Any]:
+    """What teams see while answering: never the correct option or labels."""
+    return {"index": index, "total": total, "prompt": q["prompt"], "latex": q.get("latex", ""),
+            "options": [{"text": o.get("text", ""), "latex": o.get("latex", "")} for o in q["options"]]}
+
+
+def question_results(q: dict[str, Any], answers: list[int]) -> dict[str, Any]:
+    n = len(answers)
+    out: dict[str, Any] = {
+        "correct": q["correct"], "solution": q.get("solution", []),
+        "answered": n, "min_teams": MIN_TEAMS, "locked": n < MIN_TEAMS,
+    }
+    if out["locked"]:
+        return out
+    counts = Counter(answers)
+    out["counts"] = [counts.get(i, 0) for i in range(len(q["options"]))]
+    out["pct_correct"] = round(100 * counts.get(q["correct"], 0) / n)
+    wrong = [(i, c) for i, c in counts.items() if i != q["correct"] and c > 0]
+    if wrong:
+        i, c = max(wrong, key=lambda ic: ic[1])
+        label = (q.get("labels") or [None] * 4)[i]
+        out["top_wrong"] = {"option": i, "count": c, "label": label}
+    return out
+
+
+def summary(questions: list[dict[str, Any]], teams: list[dict[str, Any]]) -> dict[str, Any]:
+    """teams: [{"name", "answers": {q_index: {"choice", "correct"}}}]"""
+    played = [t for t in teams if t["answers"]]
+    out: dict[str, Any] = {"teams": len(played), "min_teams": MIN_TEAMS, "locked": len(played) < MIN_TEAMS,
+                           "total": len(questions)}
+    if out["locked"]:
+        return out
+    per_q = []
+    for i, q in enumerate(questions):
+        ans = [t["answers"][i]["choice"] for t in played if i in t["answers"]]
+        r = question_results(q, ans)
+        per_q.append({"index": i, "prompt": q["prompt"], "answered": r["answered"],
+                      "pct_correct": r.get("pct_correct"), "top_wrong": r.get("top_wrong")})
+    out["questions"] = per_q
+    out["scoreboard"] = sorted(
+        ({"name": t["name"], "score": sum(1 for a in t["answers"].values() if a["correct"])} for t in played),
+        key=lambda s: (-s["score"], s["name"].lower()))
+    out["insights"] = insights(per_q, len(questions))
+    return out
+
+
+def insights(per_q: list[dict[str, Any]], total: int) -> list[str]:
+    """Teaching takeaways, each computed from the actual answers."""
+    scored = [q for q in per_q if q["pct_correct"] is not None]
+    lines: list[str] = []
+    if not scored:
+        return lines
+    avg = round(sum(q["pct_correct"] for q in scored) / len(scored))
+    lines.append(f"On average, {avg}% of teams answered each question correctly.")
+    hardest = min(scored, key=lambda q: q["pct_correct"])
+    if hardest["pct_correct"] < 100:
+        lines.append(f"Hardest: question {hardest['index'] + 1}, answered correctly by {hardest['pct_correct']}% of teams.")
+    labels = Counter(q["top_wrong"]["label"] for q in scored if q.get("top_wrong") and q["top_wrong"].get("label"))
+    if labels:
+        label, n = labels.most_common(1)[0]
+        lines.append(f"Most common mistake: \u201c{label}\u201d" + (f" (top wrong answer in {n} questions)." if n > 1 else "."))
+    return lines

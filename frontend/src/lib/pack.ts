@@ -6,7 +6,7 @@ export function loadPack(): Promise<Pack> {
   if (!cached) {
     cached = fetch("/packs/calculus1.json")
       .then((r) => {
-        if (!r.ok) throw new Error(`The round pack could not be loaded (HTTP ${r.status}).`);
+        if (!r.ok) throw new Error(`The question bank could not be loaded (HTTP ${r.status}).`);
         return r.json() as Promise<Pack>;
       })
       .catch((e) => {

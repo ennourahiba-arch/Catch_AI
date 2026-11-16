@@ -27,6 +27,8 @@ export interface ExerciseAttempt {
   correct: boolean;     // solved within the allowed attempts
   firstTry: boolean;    // solved on the first attempt
   usedHint: boolean;
+  /** the mistake behind a wrong multiple-choice pick, when known */
+  mistake?: string | null;
 }
 
 export interface Confidence {
@@ -133,7 +135,7 @@ export async function deletePack(id: string): Promise<void> {
 }
 
 export async function loadHistory() {
-  const [attempts, exercises, confidence] = await Promise.all([listAttempts(), listExerciseAttempts(), listConfidence()]);
-  return { attempts, exercises, confidence };
+  const [exercises, confidence] = await Promise.all([listExerciseAttempts(), listConfidence()]);
+  return { exercises, confidence };
 }
 export type History = Awaited<ReturnType<typeof loadHistory>>;
