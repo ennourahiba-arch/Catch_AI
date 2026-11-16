@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Loader2, Send } from "lucide-react";
+import { ArrowLeft, Loader2, Mic, Send, Square, Volume2, VolumeX } from "lucide-react";
 import RichText from "../components/RichText";
 import { SourceQuote } from "../components/QuestionCard";
 import { ConfidenceCheck } from "./Practice";
@@ -8,6 +8,7 @@ import { pickSession } from "../lib/readiness";
 import { addConfidence, loadHistory } from "../lib/storage";
 import { api, type ChatMsg } from "../lib/api";
 import { addExerciseAttempt } from "../lib/storage";
+import { VOICE_LANGS, canSpeak, speak, stopSpeaking, useDictation, useVoiceLang } from "../lib/speech";
 import type { CustomPack, Exercise } from "../lib/types";
 
 function Bubble({ m }: { m: ChatMsg }) {
@@ -22,18 +23,61 @@ function Bubble({ m }: { m: ChatMsg }) {
   );
 }
 
-function Composer({ onSend, busy, placeholder, disabled }: { onSend: (t: string) => void; busy: boolean; placeholder: string; disabled?: boolean }) {
+function Composer({ onSend, busy, placeholder, disabled, lang }: { onSend: (t: string) => void; busy: boolean; placeholder: string; disabled?: boolean; lang: string }) {
   const [text, setText] = useState("");
-  const send = () => { const t = text.trim(); if (t && !busy) { onSend(t); setText(""); } };
+  const dictation = useDictation(lang, setText);
+  const send = () => {
+    const t = text.trim();
+    if (t && !busy) { dictation.stop(); onSend(t); setText(""); }
+  };
   return (
-    <div className="flex items-end gap-2">
-      <label className="sr-only" htmlFor="oral-input">Your message</label>
-      <textarea id="oral-input" value={text} onChange={(e) => setText(e.target.value.slice(0, 3000))} rows={2} placeholder={placeholder} disabled={disabled}
-        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-        className="min-h-[56px] flex-1 resize-y rounded-xl border border-line bg-white p-3 outline-none focus:border-violet disabled:opacity-50" />
-      <button className="btn-primary h-[56px] w-[56px] !px-0" aria-label="Send" disabled={!text.trim() || busy || disabled} onClick={send}>
-        {busy ? <Loader2 size={18} className="animate-spin" aria-hidden /> : <Send size={18} aria-hidden />}
-      </button>
+    <div className="grid gap-2">
+      <div className="flex items-end gap-2">
+        <label className="sr-only" htmlFor="oral-input">Your answer</label>
+        <textarea id="oral-input" value={text} onChange={(e) => setText(e.target.value.slice(0, 3000))} rows={3} placeholder={placeholder} disabled={disabled}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+          className={`min-h-[64px] flex-1 resize-y rounded-xl border bg-white p-3 outline-none focus:border-violet disabled:opacity-50 ${dictation.listening ? "border-coral" : "border-line"}`} />
+        <div className="grid gap-2">
+          {dictation.supported && (
+            <button type="button" disabled={disabled || busy}
+              onClick={() => (dictation.listening ? dictation.stop() : dictation.start(text))}
+              aria-pressed={dictation.listening}
+              aria-label={dictation.listening ? "Stop recording" : "Answer with your voice"}
+              className={`flex h-[56px] w-[56px] items-center justify-center rounded-full border-2 transition-colors disabled:opacity-50 ${dictation.listening ? "border-coral bg-coral text-white" : "border-line bg-white text-navy hover:border-navy"}`}>
+              {dictation.listening ? <Square size={18} fill="currentColor" aria-hidden /> : <Mic size={20} aria-hidden />}
+            </button>
+          )}
+          <button className="btn-primary h-[56px] w-[56px] !px-0" aria-label="Send" disabled={!text.trim() || busy || disabled} onClick={send}>
+            {busy ? <Loader2 size={18} className="animate-spin" aria-hidden /> : <Send size={18} aria-hidden />}
+          </button>
+        </div>
+      </div>
+      <p className="text-sm text-navy-mute" role="status" aria-live="polite">
+        {dictation.error ? <span className="text-coral-ink">{dictation.error}</span>
+          : dictation.listening ? <span className="font-bold text-coral-ink">Listening. Speak your answer, then tap stop. You can edit the text before sending.</span>
+          : dictation.supported ? "Type, or tap the microphone to answer out loud."
+          : "Voice input isn't available in this browser (try Chrome, Edge or Safari). You can type your answer."}
+      </p>
+    </div>
+  );
+}
+
+function VoiceSettings({ lang, setLang, readAloud, setReadAloud }: { lang: string; setLang: (v: string) => void; readAloud: boolean; setReadAloud: (v: boolean) => void }) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl bg-white px-4 py-3 text-[15px] ring-1 ring-line">
+      <label className="inline-flex items-center gap-2">
+        <span className="text-navy-mute">I'll speak in</span>
+        <select value={lang} onChange={(e) => setLang(e.target.value)} className="rounded-md border border-line bg-white px-2 py-1 font-bold">
+          {VOICE_LANGS.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
+        </select>
+      </label>
+      {canSpeak() && (
+        <button type="button" aria-pressed={readAloud} onClick={() => { if (readAloud) stopSpeaking(); setReadAloud(!readAloud); }}
+          className="inline-flex items-center gap-1.5 font-bold text-violet-ink">
+          {readAloud ? <Volume2 size={17} aria-hidden /> : <VolumeX size={17} aria-hidden />}
+          {readAloud ? "Reading questions aloud" : "Read questions aloud"}
+        </button>
+      )}
     </div>
   );
 }
@@ -64,7 +108,10 @@ export default function Oral({ pack }: { pack: CustomPack }) {
       <Link to={`/mine/${pack.id}`} className="inline-flex items-center gap-1.5 text-[15px] font-bold text-navy-mute hover:text-navy"><ArrowLeft size={16} aria-hidden /> {pack.title}</Link>
       {pack.generator.test_mode && <p className="mt-3 rounded-lg bg-coral-wash px-4 py-2 text-sm font-bold text-coral-ink">Test mode: the examiner's replies are simulated.</p>}
       <Examiner pack={pack} qs={qs} onRestart={async () => setQs(pickSession(pack.exercises, await loadHistory()))} />
-      <p className="mt-6 text-sm text-navy-mute">The conversation is sent to the AI provider to generate the examiner's replies and isn't stored by the server. It needs an internet connection.</p>
+      <p className="mt-6 text-sm text-navy-mute">
+        The conversation is sent to the AI provider to generate the examiner's replies and isn't stored by the server. It needs an internet connection.
+        Voice input uses your browser's speech service (in Chrome, Google processes the audio); only the resulting text is sent to Rehearsal. Questions read aloud use your device's own voice.
+      </p>
     </div>
   );
 }
@@ -77,6 +124,10 @@ function Examiner({ pack, qs, onRestart }: { pack: CustomPack; qs: Exercise[]; o
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const end = useScrollToEnd(history.length);
+  const [lang, setLang] = useVoiceLang();
+  const [readAloud, setReadAloud] = useState(false);
+  useEffect(() => () => stopSpeaking(), []);
+  const say = (t: string) => { if (readAloud) speak(t, lang); };
   const ex = qs[i];
   const finished = i >= qs.length;
   const q = ex && {
@@ -89,6 +140,7 @@ function Examiner({ pack, qs, onRestart }: { pack: CustomPack; qs: Exercise[]; o
   useEffect(() => {
     if (finished) return;
     setHistory([{ role: "examiner", text: q.question }]); // the opening question needs no AI call
+    say(q.question);
     setClosed(false);
   }, [i]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -98,6 +150,7 @@ function Examiner({ pack, qs, onRestart }: { pack: CustomPack; qs: Exercise[]; o
     try {
       const r = await api.examiner(q, h);
       setHistory([...h, { role: "examiner", text: r.reply }]);
+      say(r.reply);
       if (r.closed) {
         const sc = r.score ?? 0;
         setClosed(true);
@@ -141,13 +194,18 @@ function Examiner({ pack, qs, onRestart }: { pack: CustomPack; qs: Exercise[]; o
         <p className="text-navy-mute">Question {i + 1} of {qs.length}</p>
       </div>
       <p className="text-navy-soft">Answer as you would out loud. If your answer is vague, the examiner asks a follow-up. It won't give the answer until the question is closed.</p>
+      <VoiceSettings lang={lang} setLang={setLang} readAloud={readAloud} setReadAloud={(on) => {
+        setReadAloud(on);
+        const lastExaminer = [...history].reverse().find((m) => m.role === "examiner");
+        if (on && lastExaminer) speak(lastExaminer.text, lang);
+      }} />
       <ol className="grid gap-3" aria-live="polite">{history.map((m, k) => <Bubble key={k} m={m} />)}</ol>
       {busy && <p className="flex items-center gap-2 text-navy-mute"><Loader2 size={16} className="animate-spin" aria-hidden /> The examiner is thinking</p>}
       {err && <p className="rounded-lg bg-coral-wash px-4 py-3 text-coral-ink" role="alert">{err}</p>}
       {closed ? (
         <button className="btn-primary justify-self-start" onClick={() => setI(i + 1)}>{i + 1 < qs.length ? "Next question" : "See my results"}</button>
       ) : (
-        <Composer onSend={send} busy={busy} placeholder="Type your answer" />
+        <Composer onSend={send} busy={busy} placeholder="Type your answer, or use the microphone" lang={lang} />
       )}
       <div ref={end} />
     </div>

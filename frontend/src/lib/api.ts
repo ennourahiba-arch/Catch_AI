@@ -54,7 +54,7 @@ async function call<T>(path: string, init: { method?: string; body?: unknown; au
     });
   } catch {
     throw new ApiError(
-      "Can't reach the classroom server. If it has been idle it may be waking up, which takes up to a minute. Try again shortly.",
+      "Can't reach the Rehearsal server. If it has been idle it may be waking up, which takes up to a minute. Try again shortly.",
       0,
     );
   }
